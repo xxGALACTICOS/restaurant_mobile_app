@@ -23,6 +23,66 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".auth.pages.LoginActivity"
+            android:exported="false"
+            android:label="@string/title_activity_login"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.pages.SignupActivity"
+            android:exported="false"
+            android:label="@string/title_activity_signup"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.pages.ProfileActivity"
+            android:exported="false"
+            android:label="@string/title_activity_profile"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".products.pages.MenuActivity"
+            android:exported="false"
+            android:label="@string/title_activity_menu"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".cart.pages.CartActivity"
+            android:exported="false"
+            android:label="@string/title_activity_cart"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.pages.AdminDashActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_dash"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.pages.AdminProfileActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_profile"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.pages.AdminProductsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_products"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.pages.AdminUsersActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_users"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.pages.AdminOrdersActivity"
+            android:exported="false"
+            android:label="@string/title_activity_admin_orders"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

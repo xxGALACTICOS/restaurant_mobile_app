@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">restarant_mobile_app</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="title_activity_signup">SignupActivity</string>
+    <string name="title_activity_profile">ProfileActivity</string>
+    <string name="title_activity_menu">MenuActivity</string>
+    <string name="title_activity_cart">CartActivity</string>
+    <string name="title_activity_admin_dash">AdminDashActivity</string>
+    <string name="title_activity_admin_profile">AdminProfileActivity</string>
+    <string name="title_activity_admin_products">AdminProductsActivity</string>
+    <string name="title_activity_admin_users">AdminUsersActivity</string>
+    <string name="title_activity_admin_orders">AdminOrdersActivity</string>
 </resources>
