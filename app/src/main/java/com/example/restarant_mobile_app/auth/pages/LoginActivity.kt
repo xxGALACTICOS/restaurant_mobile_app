@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import com.example.restarant_mobile_app.R
+import com.example.restarant_mobile_app.products.pages.MenuActivity
 
 class LoginActivity : ComponentActivity() {
     private lateinit var emailInput: EditText
@@ -32,7 +33,13 @@ class LoginActivity : ComponentActivity() {
                 return@setOnClickListener
             }
 
-            Toast.makeText(this, R.string.login_success, Toast.LENGTH_SHORT).show()
+            // TODO: verify credentials and user role against DB via UsersDAO
+            if (email.equals("admin", ignoreCase = true)) {
+                startActivity(Intent(this, AdminDashActivity::class.java))
+            } else {
+                startActivity(Intent(this, MenuActivity::class.java))
+            }
+            finish()
         }
 
         goToSignup.setOnClickListener {
@@ -45,7 +52,9 @@ class LoginActivity : ComponentActivity() {
             Toast.makeText(this, R.string.error_field_required, Toast.LENGTH_SHORT).show()
             return false
         }
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (!email.equals("admin", ignoreCase = true) &&
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        ) {
             emailInput.error = getString(R.string.error_invalid_email)
             return false
         }

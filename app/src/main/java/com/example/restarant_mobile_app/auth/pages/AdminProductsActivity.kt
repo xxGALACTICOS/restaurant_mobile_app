@@ -75,13 +75,20 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
         // TODO: load products from DB via ProductDAO
     }
     var productToEdit by remember { mutableStateOf<AdminProduct?>(null) }
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            text = "Products",
-            fontSize = 24.sp,
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Products",
+                fontSize = 24.sp,
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.weight(1f)
+            )
+            Button(onClick = { showCreateDialog = true }) {
+                Text(text = "Create product")
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(products, key = { it.id }) { product ->
@@ -95,6 +102,17 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+
+    if (showCreateDialog) {
+        CreateProductDialog(
+            onDismiss = { showCreateDialog = false },
+            onCreate = { created ->
+                products.add(created)
+                showCreateDialog = false
+                // TODO: insert product into DB via ProductDAO
+            }
+        )
     }
 
     productToEdit?.let { current ->
@@ -154,6 +172,60 @@ fun ProductRow(
             Text(text = "Delete")
         }
     }
+}
+
+@Composable
+fun CreateProductDialog(
+    onDismiss: () -> Unit,
+    onCreate: (AdminProduct) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var name by remember { mutableStateOf("") }
+    var priceText by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Create product") },
+        text = {
+            Column {
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(text = "Name") },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
+                    value = priceText,
+                    onValueChange = { priceText = it },
+                    label = { Text(text = "Price") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val price = priceText.toDoubleOrNull() ?: return@Button
+                    if (name.isBlank()) return@Button
+                    onCreate(
+                        AdminProduct(
+                            id = (System.currentTimeMillis() / 1000),
+                            name = name.trim(),
+                            price = price
+                        )
+                    )
+                }
+            ) {
+                Text(text = "Create")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text(text = "Cancel")
+            }
+        }
+    )
 }
 
 @Composable

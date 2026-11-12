@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -41,6 +42,7 @@ class AdminDashActivity : ComponentActivity() {
                         onOrdersClick = {
                             startActivity(Intent(this, AdminOrdersActivity::class.java))
                         },
+                        onLogoutClick = { logout() },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -49,11 +51,20 @@ class AdminDashActivity : ComponentActivity() {
     }
 }
 
+private fun AdminDashActivity.logout() {
+    val intent = Intent(this, LoginActivity::class.java).apply {
+        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    startActivity(intent)
+    finish()
+}
+
 @Composable
 fun AdminDashScreen(
     onProductsClick: () -> Unit,
     onUsersClick: () -> Unit,
     onOrdersClick: () -> Unit,
+    onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -83,6 +94,16 @@ fun AdminDashScreen(
         Spacer(modifier = Modifier.height(12.dp))
         Button(onClick = onOrdersClick, modifier = Modifier.fillMaxWidth()) {
             Text(text = "Orders")
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Button(
+            onClick = onLogoutClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = androidx.compose.ui.graphics.Color(0xFFC62828)
+            )
+        ) {
+            Text(text = "Logout")
         }
     }
 }
