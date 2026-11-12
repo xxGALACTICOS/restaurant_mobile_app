@@ -138,7 +138,6 @@ fun FavouritesScreen(userId: Long, modifier: Modifier = Modifier) {
     }
 }
 
-/** Top row with a button that returns to the Products page. */
 @Composable
 private fun FavouritesTopBar(
     modifier: Modifier = Modifier,
