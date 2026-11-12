@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import com.example.restarant_mobile_app.MainActivity
 import com.example.restarant_mobile_app.auth.pages.ProfileActivity
 import com.example.restarant_mobile_app.cart.pages.CartActivity
+import com.example.restarant_mobile_app.favourite.FavouritePage
 import com.example.restarant_mobile_app.products.pages.MenuActivity
 
 /** The tabs shown on the bottom bar of every protected (logged-in) page. */
@@ -22,7 +23,9 @@ enum class BottomBarTab(val label: String, val icon: String) {
     HOME("Home", "🏠"),
     PRODUCTS("Products", "🍔"),
     CART("Cart", "🛒"),
-    PROFILE("Profile", "👤")
+    PROFILE("Profile", "👤"),
+
+    Favourites("Favourites", "♥"),
 }
 
 const val EXTRA_USER_ID = "user_id"
@@ -71,6 +74,7 @@ private fun navigateToTab(context: Context, userId: Long, tab: BottomBarTab) {
         BottomBarTab.PRODUCTS -> MenuActivity::class.java
         BottomBarTab.CART -> CartActivity::class.java
         BottomBarTab.PROFILE -> ProfileActivity::class.java
+        BottomBarTab.Favourites -> FavouritePage::class.java
     }
     context.startActivity(
         Intent(context, target).apply {
