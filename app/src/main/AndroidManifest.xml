@@ -42,6 +42,12 @@
             android:theme="@style/Theme.Restarant_mobile_app"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".favourite.FavouritePage"
+            android:exported="false"
+            android:label="@string/title_activity_favourite"
+            android:theme="@style/Theme.Restarant_mobile_app"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".products.pages.MenuActivity"
             android:exported="false"
             android:label="@string/title_activity_menu"
