@@ -3,6 +3,7 @@
     <string name="title_activity_login">LoginActivity</string>
     <string name="title_activity_signup">SignupActivity</string>
     <string name="title_activity_profile">ProfileActivity</string>
+    <string name="title_activity_favourite">FavouritePage</string>
     <string name="title_activity_menu">MenuActivity</string>
     <string name="title_activity_cart">CartActivity</string>
     <string name="title_activity_admin_dash">AdminDashActivity</string>
