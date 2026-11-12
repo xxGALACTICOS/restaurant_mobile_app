@@ -1,0 +1,33 @@
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Log files
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Keystore files (keep out of version control!)
+*.jks
+*.keystore
+# !debug.keystore   # uncomment if you want to commit the debug keystore
+
+# Google Services plugin (uncomment if you don't want to commit it)
+# google-services.json
+
+# Kotlin/Native and misc
+*.hprof
