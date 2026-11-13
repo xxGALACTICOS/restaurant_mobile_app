@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,10 +35,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,27 +45,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
-import com.example.restarant_mobile_app.AppDatabase
 import com.example.restarant_mobile_app.R
-import com.example.restarant_mobile_app.cart.DAOs.CartItemsDAO
-import com.example.restarant_mobile_app.cart.Entities.Cart
-import com.example.restarant_mobile_app.cart.Entities.CartItems
 import com.example.restarant_mobile_app.cart.pages.ui.theme.Restarant_mobile_appTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-/**
- * One row shown on the cart screen.
- * Built by joining `CartItems` (rowId, quantity) with `Product` (name, price, image).
- *
- * rowId = cart_items.id, needed by deleteCartItem().
- * cartId = the cart this row belongs to, needed by the quantity/clear queries.
- */
 data class CartItemUi(
-    val rowId: Int,
-    val cartId: Int,
     val productId: Int,
     val name: String,
     val price: Double,
@@ -77,120 +57,17 @@ data class CartItemUi(
 )
 
 class CartActivity : ComponentActivity() {
-
-    // TODO: use the real logged-in user id once the login flow is ready.
-    private val currentUserId = 1
-
-    private val db by lazy { AppDatabase.get(applicationContext) }
-
-    private val cartRows = mutableStateListOf<CartItemUi>()
-    private var isLoading by mutableStateOf(true)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        loadCart()
         setContent {
             Restarant_mobile_appTheme {
                 CartScreen(
-                    cartItems = cartRows,
-                    isLoading = isLoading,
                     onBack = { finish() },
-                    onIncrease = { row -> updateQuantity(row) { it.increaseQuantity(row.cartId, row.productId) } },
-                    onDecrease = { row -> updateQuantity(row) { it.decreaseQuantity(row.cartId, row.productId) } },
-                    onDelete = { row -> deleteRow(row) },
-                    onCheckout = { checkout() }
-                )
-            }
-        }
-    }
-
-    /** Loads (and creates if missing) the user's cart, then reads its rows. */
-    private fun loadCart() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val cartDao = db.cartDao()
-            val itemsDao = db.cartItemsDao()
-            val productDao = db.productDao()
-
-            // Seed the sample products the first time the app runs.
-            val products = db.seedSampleProductsIfEmpty().associateBy { it.id }
-
-            // Make sure this user has a cart. insertCart uses IGNORE on conflict,
-            // so it returns -1 when the cart already exists.
-            val newRowId = cartDao.insertCart(Cart(userId = currentUserId))
-            val cart = cartDao.getCartByUserId(currentUserId) ?: return@launch
-
-            // The first time this cart is created, put a few items in it so the
-            // screen isn't empty. Uses insertCartItem + increaseQuantity.
-            if (newRowId != -1L) {
-                listOf("Classic Burger" to 2, "Pepperoni Pizza" to 1, "Iced Coffee" to 1)
-                    .forEach { (productName, quantity) ->
-                        val product = products.values.firstOrNull { it.name == productName }
-                            ?: return@forEach
-                        itemsDao.insertCartItem(
-                            CartItems(productId = product.id, quantity = 1, cartId = cart.id)
-                        )
-                        repeat(quantity - 1) { itemsDao.increaseQuantity(cart.id, product.id) }
+                    onCheckout = {
+                        Toast.makeText(this, "Order placed! Cart cleared.", Toast.LENGTH_SHORT).show()
                     }
-            }
-
-            // Join cart items with their products to build the rows.
-            val rows = itemsDao.getCartItems(cart.id).mapNotNull { item ->
-                products[item.productId]?.let { product ->
-                    CartItemUi(
-                        rowId = item.id,
-                        cartId = item.cartId,
-                        productId = item.productId,
-                        name = product.name,
-                        price = product.price,
-                        imageRes = product.imageRes,
-                        quantity = item.quantity
-                    )
-                }
-            }
-
-            withContext(Dispatchers.Main) {
-                cartRows.clear()
-                cartRows.addAll(rows)
-                isLoading = false
-            }
-        }
-    }
-
-    /** + / − : calls the matching DAO query, then reloads the rows. */
-    private fun updateQuantity(
-        row: CartItemUi,
-        update: suspend (CartItemsDAO) -> Unit
-    ) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            update(db.cartItemsDao())
-            loadCart()
-        }
-    }
-
-    /** Delete button: removes the cart_items row by its entity. */
-    private fun deleteRow(row: CartItemUi) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            db.cartItemsDao().deleteCartItem(
-                CartItems(
-                    id = row.rowId,
-                    productId = row.productId,
-                    quantity = row.quantity,
-                    cartId = row.cartId
                 )
-            )
-            loadCart()
-        }
-    }
-
-    /** Checkout: clears all products from the cart. */
-    private fun checkout() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val cartId = cartRows.firstOrNull()?.cartId ?: return@launch
-            db.cartItemsDao().clearCart(cartId)
-            loadCart()
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@CartActivity, "Order placed! Cart cleared.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -199,14 +76,21 @@ class CartActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
-    cartItems: List<CartItemUi>,
-    isLoading: Boolean,
     onBack: () -> Unit = {},
-    onIncrease: (CartItemUi) -> Unit = {},
-    onDecrease: (CartItemUi) -> Unit = {},
-    onDelete: (CartItemUi) -> Unit = {},
     onCheckout: () -> Unit = {}
 ) {
+    // Sample data for now — the Product entity isn't made yet.
+    val cartItems = remember {
+        mutableStateListOf(
+            CartItemUi(1, "Classic Burger", 8.99, R.drawable.img_burger, 2),
+            CartItemUi(2, "Pepperoni Pizza", 12.50, R.drawable.img_pizza, 1),
+            CartItemUi(3, "Fresh Salad", 6.75, R.drawable.img_salad, 1),
+            CartItemUi(4, "French Fries", 3.50, R.drawable.img_fries, 2),
+            CartItemUi(5, "Iced Coffee", 3.99, R.drawable.img_coffee, 1),
+            CartItemUi(6, "Chocolate Cake", 5.25, R.drawable.img_cake, 1)
+        )
+    }
+
     val totalPrice = cartItems.sumOf { it.price * it.quantity }
 
     Scaffold(
@@ -224,27 +108,23 @@ fun CartScreen(
             )
         },
         bottomBar = {
-            if (!isLoading && cartItems.isNotEmpty()) {
+            if (cartItems.isNotEmpty()) {
                 CartSummary(
                     totalPrice = totalPrice,
-                    onCheckout = onCheckout
+                    onCheckout = {
+                        // Clear all products from the cart.
+                        // TODO: replace with cartItemsDAO.clearCart(cartId) when the database is ready.
+                        cartItems.clear()
+                        onCheckout()
+                    }
                 )
             }
         }
     ) { innerPadding ->
-        when {
-            isLoading -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-
-            cartItems.isEmpty() -> EmptyCart(modifier = Modifier.padding(innerPadding))
-
-            else -> LazyColumn(
+        if (cartItems.isEmpty()) {
+            EmptyCart(modifier = Modifier.padding(innerPadding))
+        } else {
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -253,12 +133,24 @@ fun CartScreen(
             ) {
                 item { Spacer(modifier = Modifier.height(4.dp)) }
 
-                items(cartItems, key = { it.rowId }) { item ->
+                items(cartItems, key = { it.productId }) { item ->
                     CartItemRow(
                         item = item,
-                        onIncrease = { onIncrease(item) },
-                        onDecrease = { onDecrease(item) },
-                        onDelete = { onDelete(item) }
+                        onIncrease = {
+                            val index = cartItems.indexOfFirst { it.productId == item.productId }
+                            if (index != -1) {
+                                cartItems[index] = cartItems[index].copy(quantity = cartItems[index].quantity + 1)
+                            }
+                        },
+                        onDecrease = {
+                            val index = cartItems.indexOfFirst { it.productId == item.productId }
+                            if (index != -1 && cartItems[index].quantity > 1) {
+                                cartItems[index] = cartItems[index].copy(quantity = cartItems[index].quantity - 1)
+                            }
+                        },
+                        onDelete = {
+                            cartItems.removeAll { it.productId == item.productId }
+                        }
                     )
                 }
 
@@ -442,12 +334,6 @@ fun EmptyCart(modifier: Modifier = Modifier) {
 @Composable
 fun CartScreenPreview() {
     Restarant_mobile_appTheme {
-        CartScreen(
-            cartItems = listOf(
-                CartItemUi(1, 1, 1, "Classic Burger", 8.99, R.drawable.img_burger, 2),
-                CartItemUi(2, 1, 2, "Pepperoni Pizza", 12.50, R.drawable.img_pizza, 1)
-            ),
-            isLoading = false
-        )
+        CartScreen()
     }
 }

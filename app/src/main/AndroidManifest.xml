@@ -65,12 +65,7 @@
             android:label="@string/title_activity_admin_dash"
             android:theme="@style/Theme.Restarant_mobile_app"
             android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name=".auth.pages.AdminProfileActivity"
-            android:exported="false"
-            android:label="@string/title_activity_admin_profile"
-            android:theme="@style/Theme.Restarant_mobile_app"
-            android:windowSoftInputMode="adjustResize" />
+
         <activity
             android:name=".auth.pages.AdminProductsActivity"
             android:exported="false"

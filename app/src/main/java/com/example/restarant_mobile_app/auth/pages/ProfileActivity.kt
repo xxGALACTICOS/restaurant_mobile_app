@@ -1,5 +1,6 @@
 package com.example.restarant_mobile_app.auth.pages
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,6 +22,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,11 +69,23 @@ class ProfileActivity : ComponentActivity() {
                 ) { innerPadding ->
                     ProfileScreen(
                         userId = userId,
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding),
+                        onLogout = { logout() }
                     )
                 }
             }
         }
+    }
+
+    /** Logs out: clears the whole task and returns to the login screen. */
+    private fun logout() {
+        startActivity(
+            Intent(this, LoginActivity::class.java).apply {
+                // Wipe the back stack so Back can't return to protected pages
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        )
+        finish()
     }
 
     companion object {
@@ -79,7 +94,7 @@ class ProfileActivity : ComponentActivity() {
 }
 
 @Composable
-fun ProfileScreen(userId: Long, modifier: Modifier = Modifier) {
+fun ProfileScreen(userId: Long, modifier: Modifier = Modifier, onLogout: () -> Unit) {
     var loading by remember { mutableStateOf(true) }
     var user by remember { mutableStateOf<User?>(null) }
     var orders by remember { mutableStateOf<List<Order>>(emptyList()) }
@@ -108,13 +123,18 @@ fun ProfileScreen(userId: Long, modifier: Modifier = Modifier) {
         ) { Text("User not found") }
 
         else -> user?.let {
-            ProfileContent(user = it, orders = orders, modifier = modifier)
+            ProfileContent(user = it, orders = orders, modifier = modifier, onLogout = onLogout)
         }
     }
 }
 
 @Composable
-fun ProfileContent(user: User, orders: List<Order>, modifier: Modifier = Modifier) {
+fun ProfileContent(
+    user: User,
+    orders: List<Order>,
+    modifier: Modifier = Modifier,
+    onLogout: () -> Unit
+) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -135,6 +155,19 @@ fun ProfileContent(user: User, orders: List<Order>, modifier: Modifier = Modifie
         } else {
             items(orders, key = { it.id }) { order ->
                 OrderCard(order)
+            }
+        }
+
+        item {
+            Button(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            ) {
+                Text("Log out")
             }
         }
     }
@@ -287,7 +320,8 @@ fun ProfileContentPreview() {
                 Order(id = 1, userId = 1, total = 250.0, status = "pending"),
                 Order(id = 2, userId = 1, total = 99.5, status = "delivered"),
                 Order(id = 3, userId = 1, total = 40.0, status = "cancelled")
-            )
+            ),
+            onLogout = {}
         )
     }
 }

@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.restarant_mobile_app.R
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.products.pages.MenuActivity
@@ -237,8 +238,14 @@ private fun FavouritesScreenPreviewContent() {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(16.dp)
         )
-        FavouriteCard(product = Product(id = 1), onRemove = {})
-        FavouriteCard(product = Product(id = 2), onRemove = {})
+        FavouriteCard(
+            product = Product(id = 1, name = "Classic Burger", price = 8.99, imageRes = R.drawable.img_burger),
+            onRemove = {}
+        )
+        FavouriteCard(
+            product = Product(id = 2, name = "Pepperoni Pizza", price = 12.50, imageRes = R.drawable.img_pizza),
+            onRemove = {}
+        )
     }
 }
 
