@@ -40,10 +40,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.restarant_mobile_app.R
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.products.pages.MenuActivity
+import com.example.restarant_mobile_app.ui.components.BottomBarTab
+import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
 import com.example.restarant_mobile_app.ui.theme.Restarant_mobile_appTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,7 +58,7 @@ class FavouritePage : ComponentActivity() {
         val userId = intent.getLongExtra(EXTRA_USER_ID, -1L)
         setContent {
             Restarant_mobile_appTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                ProtectedScaffold(userId = userId, currentTab = BottomBarTab.Favourites) { innerPadding ->
                     FavouritesScreen(
                         userId = userId,
                         modifier = Modifier.padding(innerPadding)
@@ -139,7 +140,6 @@ fun FavouritesScreen(userId: Long, modifier: Modifier = Modifier) {
     }
 }
 
-/** Top row with a button that returns to the Products page. */
 @Composable
 private fun FavouritesTopBar(
     modifier: Modifier = Modifier,
@@ -238,14 +238,8 @@ private fun FavouritesScreenPreviewContent() {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(16.dp)
         )
-        FavouriteCard(
-            product = Product(id = 1, name = "Classic Burger", price = 8.99, imageRes = R.drawable.img_burger),
-            onRemove = {}
-        )
-        FavouriteCard(
-            product = Product(id = 2, name = "Pepperoni Pizza", price = 12.50, imageRes = R.drawable.img_pizza),
-            onRemove = {}
-        )
+        FavouriteCard(product =Product(id=1, name="test", description="test description",price=2.0, imageName="/test", categoryId=1), onRemove = {})
+        FavouriteCard(product = Product(id=2, name="test2", description="test description2",price=233.0, imageName="/test", categoryId=1), onRemove = {})
     }
 }
 

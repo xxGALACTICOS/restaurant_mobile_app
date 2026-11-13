@@ -1,7 +1,6 @@
 package com.example.restarant_mobile_app.cart.DAOs
 
 import androidx.room3.Dao
-import androidx.room3.Delete
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
@@ -18,5 +17,5 @@ interface CartDAO {
         WHERE userId = :userId
         LIMIT 1
     """)
-    suspend fun getCartByUserId(userId: Int): Cart?
+    suspend fun getCartByUserId(userId: Long): Cart?
 }

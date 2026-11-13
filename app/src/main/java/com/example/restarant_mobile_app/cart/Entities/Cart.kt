@@ -15,5 +15,5 @@ data class Cart(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
-    val userId: Int
+    val userId: Long
 )

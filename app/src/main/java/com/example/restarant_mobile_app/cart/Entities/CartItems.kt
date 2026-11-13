@@ -7,7 +7,6 @@ import androidx.room3.PrimaryKey
 
 @Entity(
     tableName = "cart_items",
-
     foreignKeys = [
         ForeignKey(
             entity = Cart::class,
@@ -16,7 +15,6 @@ import androidx.room3.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-
     indices = [
         Index("cartId"),
         Index(
@@ -34,5 +32,7 @@ data class CartItems(
 
     val quantity: Int = 1,
 
-    val cartId: Int
+    val cartId: Int,
+
+    val selectedExtra: String
 )

@@ -33,11 +33,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
+import com.example.restarant_mobile_app.RestaurantDatabase
+import com.example.restarant_mobile_app.cart.Entities.Cart
+import com.example.restarant_mobile_app.cart.Entities.CartItems
 import com.example.restarant_mobile_app.products.pages.ui.theme.Restarant_mobile_appTheme
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.ui.components.BottomBarTab
 import com.example.restarant_mobile_app.ui.components.EXTRA_USER_ID
 import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
+import kotlinx.coroutines.launch
 
 class MenuActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +51,10 @@ class MenuActivity : ComponentActivity() {
         setContent {
             Restarant_mobile_appTheme {
                 val userId = intent.getLongExtra(EXTRA_USER_ID, -1L)
+                val database = RestaurantDatabase.getInstance(this)
 
+                val cartDAO = database.cartDao()
+                val cartItemsDAO = database.cartItemDao()
                 ProtectedScaffold(
                     userId = userId,
                     currentTab = BottomBarTab.HOME
@@ -54,13 +62,58 @@ class MenuActivity : ComponentActivity() {
 
                     ProductFlow(
                         products = sampleProducts,
+
                         onAddToCart = { product, extra, quantity ->
-                            Toast.makeText(
-                                this,
-                                "${product.name} added to cart. Extra: $extra, Quantity: $quantity",
-                                Toast.LENGTH_SHORT
-                            ).show()
+
+                            lifecycleScope.launch {
+
+                                var cart =
+                                    cartDAO.getCartByUserId(userId)
+
+                                if (cart == null) {
+
+                                    cartDAO.insertCart(
+                                        Cart(userId = userId)
+                                    )
+
+                                    cart =
+                                        cartDAO.getCartByUserId(userId)
+
+                                }
+
+                                if (cart != null) {
+
+                                    val result =
+                                        cartItemsDAO.insertCartItem(
+                                            CartItems(
+                                                productId = product.id,
+                                                quantity = quantity,
+                                                cartId = cart.id,
+                                                selectedExtra = extra
+                                            )
+                                        )
+
+                                    if (result == -1L) {
+
+                                        Toast.makeText(
+                                            this@MenuActivity,
+                                            "This product is already in your cart",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+
+                                    } else {
+
+                                        Toast.makeText(
+                                            this@MenuActivity,
+                                            "Added to cart",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+
+                                }
+                            }
                         },
+
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -502,13 +555,6 @@ fun ProductDetailsScreen(
                         selectedExtra,
                         1
                     )
-
-                    Toast.makeText(
-                        context,
-                        "Added to cart",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
                 },
 
                 modifier = Modifier.fillMaxWidth()

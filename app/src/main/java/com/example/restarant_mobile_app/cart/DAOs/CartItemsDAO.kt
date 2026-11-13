@@ -1,3 +1,4 @@
+
 package com.example.restarant_mobile_app.cart.DAOs
 
 import androidx.room3.Dao
@@ -5,7 +6,6 @@ import androidx.room3.Delete
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
-import androidx.room3.Update
 import com.example.restarant_mobile_app.cart.Entities.CartItems
 
 @Dao
