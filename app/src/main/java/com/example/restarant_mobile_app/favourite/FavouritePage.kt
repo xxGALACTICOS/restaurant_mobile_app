@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.products.pages.MenuActivity
+import com.example.restarant_mobile_app.ui.components.BottomBarTab
+import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
 import com.example.restarant_mobile_app.ui.theme.Restarant_mobile_appTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,7 +58,7 @@ class FavouritePage : ComponentActivity() {
         val userId = intent.getLongExtra(EXTRA_USER_ID, -1L)
         setContent {
             Restarant_mobile_appTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                ProtectedScaffold(userId = userId, currentTab = BottomBarTab.Favourites) { innerPadding ->
                     FavouritesScreen(
                         userId = userId,
                         modifier = Modifier.padding(innerPadding)

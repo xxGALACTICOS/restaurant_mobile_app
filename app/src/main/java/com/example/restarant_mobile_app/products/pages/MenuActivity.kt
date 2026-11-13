@@ -46,7 +46,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.restarant_mobile_app.products.Entities.Product
+import com.example.restarant_mobile_app.ui.components.BottomBarTab
 import com.example.restarant_mobile_app.ui.components.EXTRA_USER_ID
+import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
 
 class MenuActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +57,7 @@ class MenuActivity : ComponentActivity() {
         setContent {
             Restarant_mobile_appTheme {
                 val userId = intent.getLongExtra(EXTRA_USER_ID, -1L)
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                ProtectedScaffold(userId = userId, currentTab = BottomBarTab.HOME) { innerPadding ->
                     ProductFlow(
                         products = sampleProducts,
                         onAddToCart = { product, extra, quantity ->
