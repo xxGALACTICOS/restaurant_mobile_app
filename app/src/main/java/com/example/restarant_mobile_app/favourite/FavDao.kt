@@ -13,7 +13,7 @@ interface FavDao {
     suspend fun addFavourite(favourite: Favourite): Long
 
     @Query("DELETE FROM favourites WHERE userId = :userId AND productId = :productId")
-    suspend fun removeFavourite(userId: Long, productId: Long)
+    suspend fun removeFavourite(userId: Long, productId: Int)
 
     @Query("SELECT * FROM favourites WHERE userId = :userId ORDER BY date DESC")
     suspend fun getFavourites(userId: Long): List<Favourite>

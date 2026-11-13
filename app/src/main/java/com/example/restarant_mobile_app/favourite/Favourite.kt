@@ -11,6 +11,6 @@ import androidx.room3.PrimaryKey
 data class Favourite(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: Long,
-    val productId: Long,
+    val productId: Int,
     val date: Long = System.currentTimeMillis()
 )

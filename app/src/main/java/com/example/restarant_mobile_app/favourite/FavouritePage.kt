@@ -236,8 +236,8 @@ private fun FavouritesScreenPreviewContent() {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(16.dp)
         )
-        FavouriteCard(product = Product(id = 1), onRemove = {})
-        FavouriteCard(product = Product(id = 2), onRemove = {})
+        FavouriteCard(product =Product(id=1, name="test", description="test description",price=2.0, imageName="/test", categoryId=1), onRemove = {})
+        FavouriteCard(product = Product(id=2, name="test2", description="test description2",price=233.0, imageName="/test", categoryId=1), onRemove = {})
     }
 }
 
