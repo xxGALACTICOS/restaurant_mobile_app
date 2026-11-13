@@ -1,47 +1,72 @@
 package com.example.restarant_mobile_app.auth.pages
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
+import com.example.restarant_mobile_app.R
 
 class SignupActivity : ComponentActivity() {
+    private lateinit var emailInput: EditText
+    private lateinit var passwordInput: EditText
+    private lateinit var confirmPasswordInput: EditText
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            Restarant_mobile_appTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+        setContentView(R.layout.activity_signup)
+
+        val nameInput = findViewById<EditText>(R.id.editTextName)
+        emailInput = findViewById(R.id.editTextEmail)
+        passwordInput = findViewById(R.id.editTextPassword)
+        confirmPasswordInput = findViewById(R.id.editTextConfirmPassword)
+        val signupButton = findViewById<Button>(R.id.buttonSignup)
+        val goToLogin = findViewById<TextView>(R.id.textGoToLogin)
+
+        signupButton.setOnClickListener {
+            val name = nameInput.text.toString().trim()
+            val email = emailInput.text.toString().trim()
+            val password = passwordInput.text.toString()
+            val confirmPassword = confirmPasswordInput.text.toString()
+
+            if (!validate(name, email, password, confirmPassword)) {
+                return@setOnClickListener
             }
+
+            Toast.makeText(this, R.string.signup_success, Toast.LENGTH_SHORT).show()
+        }
+
+        goToLogin.setOnClickListener {
+            startActivity(Intent(this, LoginActivity::class.java))
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Restarant_mobile_appTheme {
-        Greeting("Android")
+    private fun validate(
+        name: String,
+        email: String,
+        password: String,
+        confirmPassword: String
+    ): Boolean {
+        if (name.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            Toast.makeText(this, R.string.error_field_required, Toast.LENGTH_SHORT).show()
+            return false
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailInput.error = getString(R.string.error_invalid_email)
+            return false
+        }
+        if (password.length < 6) {
+            passwordInput.error = getString(R.string.error_short_password)
+            return false
+        }
+        if (password != confirmPassword) {
+            confirmPasswordInput.error = getString(R.string.error_password_mismatch)
+            return false
+        }
+        return true
     }
 }

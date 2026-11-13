@@ -4,13 +4,32 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
 
 class AdminUsersActivity : ComponentActivity() {
@@ -20,28 +39,98 @@ class AdminUsersActivity : ComponentActivity() {
         setContent {
             Restarant_mobile_appTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting6(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    AdminUsersScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
     }
 }
 
+data class AdminUser(
+    val id: Long,
+    val name: String,
+    val email: String,
+    val isBlocked: Boolean
+)
+
 @Composable
-fun Greeting6(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
+fun AdminUsersScreen(modifier: Modifier = Modifier) {
+    val users = remember {
+        mutableStateListOf(
+            AdminUser(1, "Hamdi Ola", "hamdi@example.com", false),
+            AdminUser(2, "Sara Ali", "sara@example.com", false),
+            AdminUser(3, "Omar Khaled", "omar@example.com", true)
+        )
+        // TODO: load all users via UsersDAO
+    }
+
+    Column(
         modifier = modifier
-    )
+            .fillMaxSize()
+            .background(Color(0xFF2B2B2B))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Users",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(users, key = { it.id }) { user ->
+                UserCard(
+                    user = user,
+                    onBlockClick = {
+                        val index = users.indexOfFirst { it.id == user.id }
+                        if (index != -1) {
+                            users[index] = users[index].copy(isBlocked = !users[index].isBlocked)
+                        }
+                        // TODO: toggle blocked flag in DB via UsersDAO
+                    }
+                )
+            }
+        }
+    }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview6() {
-    Restarant_mobile_appTheme {
-        Greeting6("Android")
+fun UserCard(
+    user: AdminUser,
+    onBlockClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color(0xFF3A3A3A), RoundedCornerShape(12.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = user.name,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = user.email,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFBDBDBD)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Button(
+            onClick = onBlockClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (user.isBlocked) Color(0xFF2E7D32) else Color(0xFFC62828)
+            )
+        ) {
+            Text(
+                text = if (user.isBlocked) "Unblock" else "Block",
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
