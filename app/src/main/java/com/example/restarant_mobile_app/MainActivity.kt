@@ -1,16 +1,26 @@
 package com.example.restarant_mobile_app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import com.example.restarant_mobile_app.auth.pages.LoginActivity
 import com.example.restarant_mobile_app.ui.theme.Restarant_mobile_appTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +29,32 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Restarant_mobile_appTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    SplashScreen()
                 }
             }
         }
+        window.decorView.postDelayed({
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }, 2000)
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Restarant_mobile_appTheme {
-        Greeting("Android")
+fun SplashScreen(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "restarant_mobile_app",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        CircularProgressIndicator()
     }
 }

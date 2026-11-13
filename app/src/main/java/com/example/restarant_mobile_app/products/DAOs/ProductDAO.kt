@@ -12,20 +12,17 @@ import androidx.room3.Query
 interface ProductDAO {
 
     @Insert
-    fun insertProduct(product: Product?)
+    fun insertProduct(product: Product)
 
     @Update
-    fun updateProduct(product: Product?)
+    fun updateProduct(product: Product)
 
     @Delete
-    fun deleteProduct(product: Product?)
+    fun deleteProduct(product: Product)
 
     @Query("SELECT * FROM products")
-    fun getAllProducts(): MutableList<Product?>?
+    fun getAllProducts(): List<Product>
 
     @Query("SELECT * FROM products WHERE id = :id")
-    fun getProductById(id: Int): Product?
-
-    @Query("SELECT * FROM products WHERE category = :category")
-    fun getProductsByCategory(category: String?): MutableList<Product?>?
+    fun getProductById(id: Int): Product
 }
