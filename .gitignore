@@ -31,3 +31,7 @@ Thumbs.db
 
 # Kotlin/Native and misc
 *.hprof
+
+# XML files outside app source (build/IDE artifacts)
+*.xml
+app/src/main/AndroidManifest.xml

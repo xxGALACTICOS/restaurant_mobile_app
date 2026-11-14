@@ -18,7 +18,7 @@ import com.example.restarant_mobile_app.order.Entities.Order
 import com.example.restarant_mobile_app.products.DAOs.ProductDAO
 import com.example.restarant_mobile_app.products.Entities.Product
 
-@Database(entities = [User::class, Cart::class, CartItems::class, Order::class, Product::class, Favourite::class], version = 1)
+@Database(entities = [User::class, Cart::class, CartItems::class, Order::class, Product::class, Favourite::class], version = 2)
 abstract class RestaurantDatabase : RoomDatabase() {
     abstract fun userDao(): UsersDAO
     abstract fun productsDao(): ProductDAO
@@ -38,7 +38,9 @@ abstract class RestaurantDatabase : RoomDatabase() {
                         context.applicationContext,
                         RestaurantDatabase::class.java,
                         "res_db"
-                    ).build()
+                    )
+                        .fallbackToDestructiveMigration(dropAllTables = true)
+                        .build()
                 }
             }
             return INSTANCE!!
