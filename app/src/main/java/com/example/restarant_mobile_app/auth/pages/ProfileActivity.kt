@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -31,6 +32,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,12 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.auth.Entities.User
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
 import com.example.restarant_mobile_app.order.Entities.Order
+import com.example.restarant_mobile_app.order.Entities.OrderItem
+import com.example.restarant_mobile_app.order.Entities.OrderWithItems
 import com.example.restarant_mobile_app.ui.components.BottomBarTab
 import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
 import kotlinx.coroutines.Dispatchers
@@ -97,17 +100,18 @@ class ProfileActivity : ComponentActivity() {
 fun ProfileScreen(userId: Long, modifier: Modifier = Modifier, onLogout: () -> Unit) {
     var loading by remember { mutableStateOf(true) }
     var user by remember { mutableStateOf<User?>(null) }
-    var orders by remember { mutableStateOf<List<Order>>(emptyList()) }
+    var ordersWithItems by remember { mutableStateOf<List<OrderWithItems>>(emptyList()) }
+    var selectedOrderWithItems by remember { mutableStateOf<OrderWithItems?>(null) }
 
     val context = LocalContext.current
     LaunchedEffect(userId) {
         val result = withContext(Dispatchers.IO) {
             val db = RestaurantDatabase.getInstance(context.applicationContext)
             val found = db.userDao().getUserById(userId)
-            if (found == null) null else found to db.userDao().getAllOrders(userId)
+            if (found == null) null else found to db.orderDao().getOrdersWithItemsByUserId(userId)
         }
         user = result?.first
-        orders = result?.second.orEmpty()
+        ordersWithItems = result?.second.orEmpty()
         loading = false
     }
 
@@ -123,7 +127,22 @@ fun ProfileScreen(userId: Long, modifier: Modifier = Modifier, onLogout: () -> U
         ) { Text("User not found") }
 
         else -> user?.let {
-            ProfileContent(user = it, orders = orders, modifier = modifier, onLogout = onLogout)
+            ProfileContent(
+                user = it,
+                orders = ordersWithItems,
+                modifier = modifier,
+                onLogout = onLogout,
+                onOrderClick = { orderWithItems ->
+                    selectedOrderWithItems = orderWithItems
+                }
+            )
+
+            selectedOrderWithItems?.let { selected ->
+                OrderDetailsDialog(
+                    orderWithItems = selected,
+                    onDismiss = { selectedOrderWithItems = null }
+                )
+            }
         }
     }
 }
@@ -131,9 +150,10 @@ fun ProfileScreen(userId: Long, modifier: Modifier = Modifier, onLogout: () -> U
 @Composable
 fun ProfileContent(
     user: User,
-    orders: List<Order>,
+    orders: List<OrderWithItems>,
     modifier: Modifier = Modifier,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onOrderClick: (OrderWithItems) -> Unit
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -153,8 +173,11 @@ fun ProfileContent(
         if (orders.isEmpty()) {
             item { EmptyOrders() }
         } else {
-            items(orders, key = { it.id }) { order ->
-                OrderCard(order)
+            items(orders, key = { it.order.id }) { orderWithItems ->
+                OrderCard(
+                    orderWithItems = orderWithItems,
+                    onClick = { onOrderClick(orderWithItems) }
+                )
             }
         }
 
@@ -224,8 +247,16 @@ private fun ProfileHeader(user: User, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun OrderCard(order: Order, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth()) {
+private fun OrderCard(
+    orderWithItems: OrderWithItems,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val order = orderWithItems.order
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth()
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -247,6 +278,12 @@ private fun OrderCard(order: Order, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text(
+                text = "${orderWithItems.items.sumOf { it.quantity }} item(s) • Tap to view items",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
             HorizontalDivider()
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -263,6 +300,115 @@ private fun OrderCard(order: Order, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+@Composable
+private fun OrderDetailsDialog(
+    orderWithItems: OrderWithItems,
+    onDismiss: () -> Unit
+) {
+    val order = orderWithItems.order
+    val items = orderWithItems.items
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Order #${order.id}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                StatusChip(order.status)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = formatDate(order.date),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                HorizontalDivider()
+
+                if (items.isEmpty()) {
+                    Text(
+                        text = "No items in this order",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(items) { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = item.foodName,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    if (item.selectedExtra.isNotBlank()) {
+                                        Text(
+                                            text = "Extra: ${item.selectedExtra}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Text(
+                                        text = "${item.quantity} x $${String.format(Locale.getDefault(), "%.2f", item.price)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = String.format(Locale.getDefault(), "$%.2f", item.price * item.quantity),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            HorizontalDivider(modifier = Modifier.padding(top = 6.dp))
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Total Price",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = String.format(Locale.getDefault(), "$%.2f", order.total),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
 
 @Composable
@@ -305,23 +451,4 @@ private fun EmptyOrders(modifier: Modifier = Modifier) {
 private fun formatDate(timestamp: Long): String =
     SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.getDefault()).format(Date(timestamp))
 
-@Preview(showBackground = true)
-@Composable
-fun ProfileContentPreview() {
-    Restarant_mobile_appTheme {
-        ProfileContent(
-            user = User(
-                name = "Ahmed Ashraf",
-                address = "Mostord",
-                password = "ashraf",
-                email = "ahmed@gmail.com"
-            ),
-            orders = listOf(
-                Order(orderId = 1, userId = 1, totalPrice = 250.0, status = "pending"),
-                Order(orderId = 2, userId = 1, totalPrice = 99.5, status = "delivered"),
-                Order(orderId = 3, userId = 1, totalPrice = 40.0, status = "cancelled")
-            ),
-            onLogout = {}
-        )
-    }
-}
+

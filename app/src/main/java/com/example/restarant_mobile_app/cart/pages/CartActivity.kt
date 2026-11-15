@@ -46,6 +46,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.restarant_mobile_app.R
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.cart.Entities.CartItems
+import com.example.restarant_mobile_app.order.Entities.Order
+import com.example.restarant_mobile_app.order.Entities.OrderItem
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.products.pages.ProductImage
 import com.example.restarant_mobile_app.products.pages.ui.theme.Restarant_mobile_appTheme
@@ -53,6 +55,8 @@ import com.example.restarant_mobile_app.ui.components.BottomBarTab
 import com.example.restarant_mobile_app.ui.components.EXTRA_USER_ID
 import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class CartActivity : ComponentActivity() {
 
@@ -179,16 +183,41 @@ class CartActivity : ComponentActivity() {
 
                                 val cartId = currentCartId
 
-                                if (cartId != null) {
+                                if (cartId != null && cartItems.isNotEmpty()) {
 
-                                    cartItemsDAO.clearCart(cartId)
+                                    val totalPrice = cartItems.indices.sumOf { index ->
+                                        products[index].price * cartItems[index].quantity
+                                    }
+
+                                    val order = Order(
+                                        userId = userId,
+                                        totalPrice = totalPrice,
+                                        status = "Pending"
+                                    )
+
+                                    val orderItemsList = cartItems.indices.map { index ->
+                                        val item = cartItems[index]
+                                        val product = products[index]
+                                        OrderItem(
+                                            foodId = product.id,
+                                            foodName = product.name,
+                                            price = product.price,
+                                            quantity = item.quantity,
+                                            selectedExtra = item.selectedExtra
+                                        )
+                                    }
+
+                                    withContext(Dispatchers.IO) {
+                                        database.orderDao().createOrder(order, orderItemsList)
+                                        cartItemsDAO.clearCart(cartId)
+                                    }
 
                                     cartItems.clear()
                                     products.clear()
 
                                     Toast.makeText(
                                         this@CartActivity,
-                                        "Checkout completed!",
+                                        "Order placed successfully!",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
