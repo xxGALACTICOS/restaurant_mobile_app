@@ -1,9 +1,12 @@
 package com.example.restarant_mobile_app.auth.pages
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
 import com.example.restarant_mobile_app.products.Entities.Product
+import com.example.restarant_mobile_app.products.pages.ProductImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -153,11 +157,11 @@ fun ProductRow(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        ProductImage(
+            imageName = product.imageName,
             modifier = Modifier
                 .size(64.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFE8E8E8))
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -193,10 +197,27 @@ fun CreateProductDialog(
     onCreate: (Product) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var priceText by remember { mutableStateOf("") }
-    var imageText by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf("") }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {
+                // Ignore if not supported
+            }
+            imageUri = it.toString()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -224,12 +245,34 @@ fun CreateProductDialog(
                     singleLine = true
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                TextField(
-                    value = imageText,
-                    onValueChange = { imageText = it },
-                    label = { Text(text = "Image name (e.g. burger)") },
-                    singleLine = true
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFE8E8E8)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (imageUri.isNotEmpty()) {
+                            ProductImage(
+                                imageName = imageUri,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text("No Image", fontSize = 10.sp, color = Color.Gray)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    OutlinedButton(
+                        onClick = { imagePickerLauncher.launch("image/*") },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = if (imageUri.isEmpty()) "Choose Image" else "Change Image")
+                    }
+                }
             }
         },
         confirmButton = {
@@ -242,7 +285,7 @@ fun CreateProductDialog(
                             name = name.trim(),
                             description = description.trim(),
                             price = price,
-                            imageName = imageText.trim().lowercase(Locale.US)
+                            imageName = imageUri
                         )
                     )
                 }
@@ -265,10 +308,27 @@ fun EditProductDialog(
     onSave: (Product) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf(product.name) }
     var description by remember { mutableStateOf(product.description) }
     var priceText by remember { mutableStateOf(product.price.toString()) }
-    var imageText by remember { mutableStateOf(product.imageName) }
+    var imageUri by remember { mutableStateOf(product.imageName) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {
+                // Ignore if not supported
+            }
+            imageUri = it.toString()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -296,12 +356,34 @@ fun EditProductDialog(
                     singleLine = true
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                TextField(
-                    value = imageText,
-                    onValueChange = { imageText = it },
-                    label = { Text(text = "Image name (e.g. burger)") },
-                    singleLine = true
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFE8E8E8)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (imageUri.isNotEmpty()) {
+                            ProductImage(
+                                imageName = imageUri,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text("No Image", fontSize = 10.sp, color = Color.Gray)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    OutlinedButton(
+                        onClick = { imagePickerLauncher.launch("image/*") },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = if (imageUri.isEmpty()) "Choose Image" else "Change Image")
+                    }
+                }
             }
         },
         confirmButton = {
@@ -313,7 +395,7 @@ fun EditProductDialog(
                             name = name.trim(),
                             description = description.trim(),
                             price = price,
-                            imageName = imageText.trim().lowercase(Locale.US)
+                            imageName = imageUri
                         )
                     )
                 }

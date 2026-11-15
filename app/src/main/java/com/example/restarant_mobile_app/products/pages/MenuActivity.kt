@@ -2,6 +2,7 @@ package com.example.restarant_mobile_app.products.pages
 import android.os.Bundle
 import android.widget.Toast
 import android.annotation.SuppressLint
+import android.graphics.BitmapFactory
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -26,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -479,7 +481,6 @@ fun ProductDetailsScreen(
             Text("← Back")
         }
 
-        // Favorite Button
 
         FavoriteButton(
             isFavorite = isFavorite,
@@ -489,7 +490,6 @@ fun ProductDetailsScreen(
                 .padding(end = 16.dp)
         )
 
-        // Product Image
 
         ProductImage(
             imageName = product.imageName,
@@ -592,41 +592,59 @@ fun ProductImage(
     imageName: String,
     modifier: Modifier = Modifier
 ) {
-
     val context = LocalContext.current
 
-    val imageId = remember(imageName) {
-
-        context.resources.getIdentifier(
-            imageName,
-            "drawable",
-            context.packageName
-        )
-    }
-
-    if (imageId != 0) {
-
-        Image(
-            painter = painterResource(id = imageId),
-
-            contentDescription = imageName,
-
-            modifier = modifier,
-
-            contentScale = ContentScale.Crop
-        )
-
-    } else {
-
-        Box(
-            modifier = modifier,
-            contentAlignment = Alignment.Center
-        ) {
-
-            Text(
-                "No image",
-                color = Color.Gray
+    if (imageName.startsWith("content://") || imageName.startsWith("file://")) {
+        val bitmap = remember(imageName) {
+            try {
+                val uri = android.net.Uri.parse(imageName)
+                val inputStream = context.contentResolver.openInputStream(uri)
+                BitmapFactory.decodeStream(inputStream)
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = modifier,
+                contentScale = ContentScale.Crop
             )
+        } else {
+            Box(
+                modifier = modifier,
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No image", color = Color.Gray)
+            }
+        }
+    } else {
+        val imageId = remember(imageName) {
+            context.resources.getIdentifier(
+                imageName,
+                "drawable",
+                context.packageName
+            )
+        }
+
+        if (imageId != 0) {
+            Image(
+                painter = painterResource(id = imageId),
+                contentDescription = imageName,
+                modifier = modifier,
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = modifier,
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "No image",
+                    color = Color.Gray
+                )
+            }
         }
     }
 }

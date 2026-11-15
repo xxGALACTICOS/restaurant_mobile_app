@@ -9,14 +9,10 @@ data class Product(
     val name: String,
     val description: String,
     val price: Double,
-    // Name of the image file inside res/drawable, WITHOUT the extension (e.g. "burger")
-    val imageName: String,
-    // Links the product to a category (the category teammate's table). Add a ForeignKey later if needed.
-    val categoryId: Int = 0,
-    // Comma-separated options the customer can choose from, e.g. "Original,Spicy"
-    val extras: String = "Original,Spicy"
+     val imageName: String,
+     val categoryId: Int = 0,
+     val extras: String = "Original,Spicy"
 ) {
-    // Not a database column (it's a function, not a property)
-    fun extraOptions(): List<String> =
+     fun extraOptions(): List<String> =
         extras.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 }
