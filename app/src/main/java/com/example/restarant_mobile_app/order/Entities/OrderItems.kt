@@ -31,5 +31,5 @@ data class OrderItem(
 
     val quantity: Int,
 
-
+    val selectedExtra: String = ""
 )

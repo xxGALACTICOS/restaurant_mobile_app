@@ -47,6 +47,15 @@ abstract class OrderDAO {
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     abstract suspend fun getOrderItems(orderId: Int): List<OrderItem>
 
+    // Get orders with their items by user ID
+    @Transaction
+    @Query("SELECT * FROM orders WHERE userId = :userId ORDER BY orderDate DESC")
+    abstract suspend fun getOrdersWithItemsByUserId(userId: Long): List<OrderWithItems>
+
+    // Get all orders with their items (for Admin)
+    @Transaction
+    @Query("SELECT * FROM orders ORDER BY orderDate DESC")
+    abstract suspend fun getAllOrdersWithItems(): List<OrderWithItems>
 
     // Update order status
     @Query("UPDATE orders SET status = :status WHERE orderId = :orderId")
