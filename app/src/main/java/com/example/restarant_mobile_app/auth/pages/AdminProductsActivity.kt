@@ -22,25 +22,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
+import com.example.restarant_mobile_app.products.Entities.Product
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class AdminProductsActivity : ComponentActivity() {
@@ -57,25 +64,26 @@ class AdminProductsActivity : ComponentActivity() {
     }
 }
 
-data class AdminProduct(
-    val id: Long,
-    val name: String,
-    val price: Double
-)
-
 @Composable
 fun AdminProductsScreen(modifier: Modifier = Modifier) {
-    val products = remember {
-        mutableStateListOf(
-            AdminProduct(1, "Margherita Pizza", 8.99),
-            AdminProduct(2, "Chicken Burger", 6.49),
-            AdminProduct(3, "Caesar Salad", 5.75),
-            AdminProduct(4, "Spaghetti Bolognese", 9.25)
-        )
-        // TODO: load products from DB via ProductDAO
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val dao = remember {
+        RestaurantDatabase.getInstance(context.applicationContext).productsDao()
     }
-    var productToEdit by remember { mutableStateOf<AdminProduct?>(null) }
+
+    val products = remember { mutableStateListOf<Product>() }
+    var productToEdit by remember { mutableStateOf<Product?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+
+    // Loads the current list straight from the DB
+    suspend fun reload() {
+        val list = withContext(Dispatchers.IO) { dao.getAllProducts() }
+        products.clear()
+        products.addAll(list)
+    }
+
+    LaunchedEffect(Unit) { reload() }
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -96,8 +104,10 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
                     product = product,
                     onEditClick = { productToEdit = product },
                     onDeleteClick = {
-                        products.remove(product)
-                        // TODO: delete product from DB via ProductDAO
+                        scope.launch {
+                            withContext(Dispatchers.IO) { dao.deleteProduct(product) }
+                            reload()
+                        }
                     }
                 )
             }
@@ -108,9 +118,11 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
         CreateProductDialog(
             onDismiss = { showCreateDialog = false },
             onCreate = { created ->
-                products.add(created)
                 showCreateDialog = false
-                // TODO: insert product into DB via ProductDAO
+                scope.launch {
+                    withContext(Dispatchers.IO) { dao.insertProduct(created) }
+                    reload()
+                }
             }
         )
     }
@@ -120,10 +132,11 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
             product = current,
             onDismiss = { productToEdit = null },
             onSave = { updated ->
-                val index = products.indexOfFirst { it.id == updated.id }
-                if (index != -1) products[index] = updated
                 productToEdit = null
-                // TODO: update product in DB via ProductDAO
+                scope.launch {
+                    withContext(Dispatchers.IO) { dao.updateProduct(updated) }
+                    reload()
+                }
             }
         )
     }
@@ -131,7 +144,7 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun ProductRow(
-    product: AdminProduct,
+    product: Product,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -177,11 +190,13 @@ fun ProductRow(
 @Composable
 fun CreateProductDialog(
     onDismiss: () -> Unit,
-    onCreate: (AdminProduct) -> Unit,
+    onCreate: (Product) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var priceText by remember { mutableStateOf("") }
+    var imageText by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -196,9 +211,23 @@ fun CreateProductDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 TextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text(text = "Description") },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
                     value = priceText,
                     onValueChange = { priceText = it },
                     label = { Text(text = "Price") },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
+                    value = imageText,
+                    onValueChange = { imageText = it },
+                    label = { Text(text = "Image name (e.g. burger)") },
                     singleLine = true
                 )
             }
@@ -209,10 +238,11 @@ fun CreateProductDialog(
                     val price = priceText.toDoubleOrNull() ?: return@Button
                     if (name.isBlank()) return@Button
                     onCreate(
-                        AdminProduct(
-                            id = (System.currentTimeMillis() / 1000),
+                        Product(
                             name = name.trim(),
-                            price = price
+                            description = description.trim(),
+                            price = price,
+                            imageName = imageText.trim().lowercase(Locale.US)
                         )
                     )
                 }
@@ -230,13 +260,15 @@ fun CreateProductDialog(
 
 @Composable
 fun EditProductDialog(
-    product: AdminProduct,
+    product: Product,
     onDismiss: () -> Unit,
-    onSave: (AdminProduct) -> Unit,
+    onSave: (Product) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var name by remember { mutableStateOf(product.name) }
+    var description by remember { mutableStateOf(product.description) }
     var priceText by remember { mutableStateOf(product.price.toString()) }
+    var imageText by remember { mutableStateOf(product.imageName) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -251,9 +283,23 @@ fun EditProductDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 TextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text(text = "Description") },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
                     value = priceText,
                     onValueChange = { priceText = it },
                     label = { Text(text = "Price") },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                TextField(
+                    value = imageText,
+                    onValueChange = { imageText = it },
+                    label = { Text(text = "Image name (e.g. burger)") },
                     singleLine = true
                 )
             }
@@ -262,7 +308,14 @@ fun EditProductDialog(
             Button(
                 onClick = {
                     val price = priceText.toDoubleOrNull() ?: return@Button
-                    onSave(product.copy(name = name, price = price))
+                    onSave(
+                        product.copy(
+                            name = name.trim(),
+                            description = description.trim(),
+                            price = price,
+                            imageName = imageText.trim().lowercase(Locale.US)
+                        )
+                    )
                 }
             ) {
                 Text(text = "Save")

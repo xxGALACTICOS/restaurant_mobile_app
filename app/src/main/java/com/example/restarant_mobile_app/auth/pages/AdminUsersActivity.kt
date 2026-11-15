@@ -22,15 +22,23 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.restarant_mobile_app.RestaurantDatabase
+import com.example.restarant_mobile_app.auth.Entities.User
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AdminUsersActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,23 +54,24 @@ class AdminUsersActivity : ComponentActivity() {
     }
 }
 
-data class AdminUser(
-    val id: Long,
-    val name: String,
-    val email: String,
-    val isBlocked: Boolean
-)
-
 @Composable
 fun AdminUsersScreen(modifier: Modifier = Modifier) {
-    val users = remember {
-        mutableStateListOf(
-            AdminUser(1, "Hamdi Ola", "hamdi@example.com", false),
-            AdminUser(2, "Sara Ali", "sara@example.com", false),
-            AdminUser(3, "Omar Khaled", "omar@example.com", true)
-        )
-        // TODO: load all users via UsersDAO
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val dao = remember {
+        RestaurantDatabase.getInstance(context.applicationContext).userDao()
     }
+
+    val users = remember { mutableStateListOf<User>() }
+
+    // Loads the current list straight from the DB
+    suspend fun reload() {
+        val list = withContext(Dispatchers.IO) { dao.getAllUsers() }
+        users.clear()
+        users.addAll(list)
+    }
+
+    LaunchedEffect(Unit) { reload() }
 
     Column(
         modifier = modifier
@@ -81,11 +90,12 @@ fun AdminUsersScreen(modifier: Modifier = Modifier) {
                 UserCard(
                     user = user,
                     onBlockClick = {
-                        val index = users.indexOfFirst { it.id == user.id }
-                        if (index != -1) {
-                            users[index] = users[index].copy(isBlocked = !users[index].isBlocked)
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                dao.updateUser(user.copy(blocked = !user.blocked))
+                            }
+                            reload()
                         }
-                        // TODO: toggle blocked flag in DB via UsersDAO
                     }
                 )
             }
@@ -95,7 +105,7 @@ fun AdminUsersScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun UserCard(
-    user: AdminUser,
+    user: User,
     onBlockClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -124,11 +134,11 @@ fun UserCard(
         Button(
             onClick = onBlockClick,
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (user.isBlocked) Color(0xFF2E7D32) else Color(0xFFC62828)
+                containerColor = if (user.blocked) Color(0xFF2E7D32) else Color(0xFFC62828)
             )
         ) {
             Text(
-                text = if (user.isBlocked) "Unblock" else "Block",
+                text = if (user.blocked) "Unblock" else "Block",
                 fontWeight = FontWeight.Bold
             )
         }

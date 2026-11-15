@@ -8,7 +8,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.lifecycleScope
 import com.example.restarant_mobile_app.R
+import com.example.restarant_mobile_app.RestaurantDatabase
+import com.example.restarant_mobile_app.auth.Entities.User
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SignupActivity : ComponentActivity() {
     private lateinit var emailInput: EditText
@@ -37,7 +43,31 @@ class SignupActivity : ComponentActivity() {
                 return@setOnClickListener
             }
 
-            Toast.makeText(this, R.string.signup_success, Toast.LENGTH_SHORT).show()
+            signupButton.isEnabled = false
+            lifecycleScope.launch {
+                val newUser = User(
+                    name = name,
+                    address = "",
+                    password = password,
+                    email = email
+                )
+                val insertedId = withContext(Dispatchers.IO) {
+                    val dao = RestaurantDatabase.getInstance(applicationContext).userDao()
+                    // Reject the email if it is already registered
+                    if (dao.getUserByEmail(email) != null) -1L
+                    else dao.insertUser(newUser)
+                }
+                signupButton.isEnabled = true
+
+                if (insertedId == -1L) {
+                    emailInput.error = getString(R.string.error_email_taken)
+                    return@launch
+                }
+
+                Toast.makeText(this@SignupActivity, R.string.signup_success, Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this@SignupActivity, LoginActivity::class.java))
+                finish()
+            }
         }
 
         goToLogin.setOnClickListener {

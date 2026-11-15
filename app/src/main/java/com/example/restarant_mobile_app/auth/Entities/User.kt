@@ -9,5 +9,6 @@ data class User(
     val name: String,
     val address: String,
     val password: String,
-    val email: String
+    val email: String,
+    val blocked: Boolean = false
 )

@@ -18,6 +18,8 @@
     <string name="error_invalid_email">Enter a valid email address</string>
     <string name="error_short_password">Password must be at least 6 characters</string>
     <string name="error_password_mismatch">Passwords do not match</string>
+    <string name="error_email_taken">This email is already registered</string>
+    <string name="error_invalid_credentials">Invalid email or password</string>
     <string name="login_success">Login successful</string>
     <string name="signup_success">Account created</string>
     <string name="title_activity_profile">ProfileActivity</string>

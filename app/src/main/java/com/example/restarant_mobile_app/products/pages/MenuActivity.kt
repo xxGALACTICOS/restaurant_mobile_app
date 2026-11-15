@@ -27,22 +27,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.cart.Entities.Cart
 import com.example.restarant_mobile_app.cart.Entities.CartItems
+import com.example.restarant_mobile_app.favourite.Favourite
 import com.example.restarant_mobile_app.products.pages.ui.theme.Restarant_mobile_appTheme
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.ui.components.BottomBarTab
 import com.example.restarant_mobile_app.ui.components.EXTRA_USER_ID
 import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MenuActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,13 +61,38 @@ class MenuActivity : ComponentActivity() {
 
                 val cartDAO = database.cartDao()
                 val cartItemsDAO = database.cartItemDao()
+                val favouritesDAO = database.favouritesDao()
+
+                // Products come straight from the DB
+                val products = remember { mutableStateListOf<Product>() }
+                LaunchedEffect(Unit) {
+                    products.addAll(
+                        withContext(Dispatchers.IO) {
+                            database.productsDao().getAllProducts()
+                        }
+                    )
+                }
+
                 ProtectedScaffold(
                     userId = userId,
                     currentTab = BottomBarTab.HOME
                 ) { innerPadding ->
 
                     ProductFlow(
-                        products = sampleProducts,
+                        userId = userId,
+                        products = products,
+
+                        onToggleFavorite = { product, isAdding ->
+                            lifecycleScope.launch {
+                                if (isAdding) {
+                                    favouritesDAO.addFavourite(
+                                        Favourite(userId = userId, productId = product.id)
+                                    )
+                                } else {
+                                    favouritesDAO.removeFavourite(userId, product.id)
+                                }
+                            }
+                        },
 
                         onAddToCart = { product, extra, quantity ->
 
@@ -124,61 +155,14 @@ class MenuActivity : ComponentActivity() {
 
 
 // =================================
-// Sample Products
-// =================================
-
-val sampleProducts = listOf(
-
-    Product(
-        1,
-        "Beef Burger",
-        "Juicy beef patty with cheese, lettuce and tomato.",
-        120.0,
-        "burger"
-    ),
-
-    Product(
-        2,
-        "Chicken Wings",
-        "Crispy fried wings served with dipping sauce.",
-        95.0,
-        "wings"
-    ),
-
-    Product(
-        3,
-        "Pizza Margherita",
-        "Tomato sauce, mozzarella and fresh basil.",
-        140.0,
-        "pizza",
-        extras = "Original"
-    ),
-
-    Product(
-        4,
-        "Pasta Alfredo",
-        "Creamy white sauce pasta with grilled chicken.",
-        110.0,
-        "pasta"
-    ),
-
-    Product(
-        5,
-        "French Fries",
-        "Golden fries with a pinch of salt.",
-        40.0,
-        "fries"
-    )
-)
-
-
-// =================================
 // Product Flow
 // =================================
 
 @Composable
 fun ProductFlow(
+    userId: Long,
     products: List<Product>,
+    onToggleFavorite: (Product, Boolean) -> Unit,
     onAddToCart: (Product, String, Int) -> Unit,
     modifier: Modifier
 ) {
@@ -193,6 +177,31 @@ fun ProductFlow(
         mutableStateOf(setOf<Int>())
     }
 
+    val scope = rememberCoroutineScope()
+
+    // Favourites come straight from the DB
+    suspend fun loadFavourites(): Set<Int> =
+        RestaurantDatabase.getInstance(context.applicationContext)
+            .favouritesDao()
+            .getFavourites(userId)
+            .map { it.productId }.toSet()
+
+    LaunchedEffect(userId) {
+        favoriteIds = loadFavourites()
+    }
+
+    // Re-sync hearts when coming back from the favourites page (screen was just paused/resumed)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { favoriteIds = loadFavourites() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val product = selected
 
     if (product == null) {
@@ -202,7 +211,7 @@ fun ProductFlow(
             favoriteIds = favoriteIds,
 
             onToggleFavorite = { id ->
-
+                val target = products.find { it.id == id } ?: return@ProductHomeScreen
                 val isAdding = id !in favoriteIds
 
                 favoriteIds = if (isAdding) {
@@ -210,6 +219,8 @@ fun ProductFlow(
                 } else {
                     favoriteIds - id
                 }
+
+                onToggleFavorite(target, isAdding)
 
                 Toast.makeText(
                     context,
@@ -258,6 +269,8 @@ fun ProductFlow(
                 } else {
                     favoriteIds - product.id
                 }
+
+                onToggleFavorite(product, isAdding)
 
                 Toast.makeText(
                     context,

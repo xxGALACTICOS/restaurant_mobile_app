@@ -48,7 +48,6 @@ import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.cart.Entities.CartItems
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.products.pages.ProductImage
-import com.example.restarant_mobile_app.products.pages.sampleProducts
 import com.example.restarant_mobile_app.products.pages.ui.theme.Restarant_mobile_appTheme
 import com.example.restarant_mobile_app.ui.components.BottomBarTab
 import com.example.restarant_mobile_app.ui.components.EXTRA_USER_ID
@@ -86,9 +85,15 @@ class CartActivity : ComponentActivity() {
 
                 val savedItems = cartItemsDAO.getCartItems(cart.id)
 
+                val allProducts = kotlinx.coroutines.withContext(
+                    kotlinx.coroutines.Dispatchers.IO
+                ) {
+                    database.productsDao().getAllProducts()
+                }
+
                 for (item in savedItems) {
 
-                    val product = sampleProducts.find {
+                    val product = allProducts.find {
                         it.id == item.productId
                     }
 
