@@ -33,6 +33,6 @@ interface UsersDAO {
     @Query("SELECT * FROM users")
     suspend fun getAllUsers(): List<User>
 
-    @Query("SELECT * FROM `order` WHERE userId = :userId ORDER BY date DESC")
+    @Query("SELECT * FROM orders WHERE userId = :userId ORDER BY orderDate DESC")
     suspend fun getAllOrders(userId: Long): List<Order>
 }

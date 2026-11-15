@@ -15,10 +15,13 @@ import com.example.restarant_mobile_app.favourite.Favourite
 import com.example.restarant_mobile_app.order.DAOs.OrderDAO
 import com.example.restarant_mobile_app.order.DAOs.OrderItemsDAO
 import com.example.restarant_mobile_app.order.Entities.Order
+import com.example.restarant_mobile_app.order.Entities.OrderItem
 import com.example.restarant_mobile_app.products.DAOs.ProductDAO
 import com.example.restarant_mobile_app.products.Entities.Product
 
-@Database(entities = [User::class, Cart::class, CartItems::class, Order::class, Product::class, Favourite::class], version = 5)
+
+@Database(entities = [User::class, Cart::class, CartItems::class, Order::class, OrderItem::class, Product::class, Favourite::class], version = 6)
+
 abstract class RestaurantDatabase : RoomDatabase() {
     abstract fun userDao(): UsersDAO
     abstract fun productsDao(): ProductDAO

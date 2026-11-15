@@ -317,9 +317,9 @@ fun ProfileContentPreview() {
                 email = "ahmed@gmail.com"
             ),
             orders = listOf(
-                Order(id = 1, userId = 1, total = 250.0, status = "pending"),
-                Order(id = 2, userId = 1, total = 99.5, status = "delivered"),
-                Order(id = 3, userId = 1, total = 40.0, status = "cancelled")
+                Order(orderId = 1, userId = 1, totalPrice = 250.0, status = "pending"),
+                Order(orderId = 2, userId = 1, totalPrice = 99.5, status = "delivered"),
+                Order(orderId = 3, userId = 1, totalPrice = 40.0, status = "cancelled")
             ),
             onLogout = {}
         )
