@@ -9,8 +9,7 @@ import com.example.restarant_mobile_app.cart.Entities.Cart
 @Dao
 interface CartDAO {
 
-    // TODO: remove this shit
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert
     suspend fun insertCart(cart: Cart): Long
 
     @Query("""

@@ -116,18 +116,12 @@ class MenuActivity : ComponentActivity() {
 
                                 if (cart != null) {
 
-                                    val result =
-                                        cartItemsDAO.insertCartItem(
-                                            CartItems(
-                                                productId = product.id,
-                                                quantity = quantity,
-                                                cartId = cart.id,
-                                                selectedExtra = extra
-                                            )
-                                        )
+                                    val existingItem = cartItemsDAO.getCartItem(
+                                        cart.id,
+                                        product.id
+                                    )
 
-                                    // TODO: -1L removal
-                                    if (result == -1L) {
+                                    if (existingItem != null) {
 
                                         Toast.makeText(
                                             this@MenuActivity,
@@ -136,6 +130,15 @@ class MenuActivity : ComponentActivity() {
                                         ).show()
 
                                     } else {
+
+                                        cartItemsDAO.insertCartItem(
+                                            CartItems(
+                                                productId = product.id,
+                                                quantity = quantity,
+                                                cartId = cart.id,
+                                                selectedExtra = extra
+                                            )
+                                        )
 
                                         Toast.makeText(
                                             this@MenuActivity,

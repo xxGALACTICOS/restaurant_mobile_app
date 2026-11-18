@@ -11,12 +11,17 @@ import com.example.restarant_mobile_app.cart.Entities.CartItems
 @Dao
 interface CartItemsDAO {
 
-    // TODO: remove this shit
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert
     suspend fun insertCartItem(cartItem: CartItems): Long
 
     @Query("SELECT * FROM cart_items WHERE cartId = :cartId")
     suspend fun getCartItems(cartId: Int): List<CartItems>
+
+    @Query("""
+    SELECT * FROM cart_items
+    WHERE cartId = :cartId AND productId = :productId
+""")
+    suspend fun getCartItem(cartId: Int, productId: Int): CartItems?
 
     @Query("""
         UPDATE cart_items

@@ -15,9 +15,7 @@ import androidx.room3.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    // TODO: nfhmha
     indices = [
-        Index("cartId"),
         Index(
             value = ["cartId", "productId"],
             unique = true
