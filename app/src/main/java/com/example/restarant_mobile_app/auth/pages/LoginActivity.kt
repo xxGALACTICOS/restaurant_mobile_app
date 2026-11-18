@@ -38,6 +38,13 @@ class LoginActivity : ComponentActivity() {
             val email = emailInput.text.toString().trim()
             val password = passwordInput.text.toString()
 
+            val isAdmin = (email == ADMIN_EMAIL && password == ADMIN_PASSWORD)
+            if (isAdmin) {
+                startActivity(Intent(this@LoginActivity, AdminDashActivity::class.java))
+                finish()
+                return@setOnClickListener
+            }
+
             if (!validate(email, password)) {
                 return@setOnClickListener
             }
@@ -61,16 +68,11 @@ class LoginActivity : ComponentActivity() {
                 }
 
                 Toast.makeText(this@LoginActivity, R.string.login_success, Toast.LENGTH_SHORT).show()
-                val isAdmin = (email == ADMIN_EMAIL && password == ADMIN_PASSWORD)
-                if (isAdmin) {
-                    startActivity(Intent(this@LoginActivity, AdminDashActivity::class.java))
-                } else {
-                    startActivity(
-                        Intent(this@LoginActivity, MenuActivity::class.java).apply {
-                            putExtra(EXTRA_USER_ID, loggedIn.id)
-                        }
-                    )
-                }
+                startActivity(
+                    Intent(this@LoginActivity, MenuActivity::class.java).apply {
+                        putExtra(EXTRA_USER_ID, loggedIn.id)
+                    }
+                )
                 finish()
             }
         }

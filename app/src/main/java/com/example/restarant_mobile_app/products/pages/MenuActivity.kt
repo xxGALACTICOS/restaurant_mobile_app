@@ -118,18 +118,11 @@ class MenuActivity : ComponentActivity() {
 
                                     val existingItem = cartItemsDAO.getCartItem(
                                         cart.id,
-                                        product.id
+                                        product.id,
+                                        extra
                                     )
 
-                                    if (existingItem != null) {
-
-                                        Toast.makeText(
-                                            this@MenuActivity,
-                                            "This product is already in your cart",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-
-                                    } else {
+                                    if (existingItem == null) {
 
                                         cartItemsDAO.insertCartItem(
                                             CartItems(
@@ -145,6 +138,16 @@ class MenuActivity : ComponentActivity() {
                                             "Added to cart",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                    }
+                                    else{
+                                        if(existingItem.selectedExtra ==extra) {
+                                            Toast.makeText(
+                                                this@MenuActivity,
+                                                "This product is already in your cart",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+
                                     }
 
                                 }

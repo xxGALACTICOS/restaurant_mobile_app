@@ -85,9 +85,7 @@ class CartActivity : ComponentActivity() {
             if (cart != null) {
 
                 currentCartId = cart.id
-
                 val savedItems = cartItemsDAO.getCartItems(cart.id)
-
                 val allProducts = database.productsDao().getAllProducts()
 
                 for (item in savedItems) {
@@ -95,7 +93,6 @@ class CartActivity : ComponentActivity() {
                     val product = allProducts.find {
                         it.id == item.productId
                     }
-
                     if (product != null) {
                         cartItems.add(item)
                         products.add(product)
@@ -397,8 +394,7 @@ private fun CartItemCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                if (item.selectedExtra.isNotBlank()) {
+                if (item.selectedExtra!="") {
 
                     Spacer(modifier = Modifier.height(6.dp))
 

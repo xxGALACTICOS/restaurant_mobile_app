@@ -17,7 +17,7 @@ import androidx.room3.PrimaryKey
     ],
     indices = [
         Index(
-            value = ["cartId", "productId"],
+            value = ["cartId", "productId","selectedExtra"],
             unique = true
         )
     ]

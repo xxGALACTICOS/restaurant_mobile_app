@@ -19,9 +19,9 @@ interface CartItemsDAO {
 
     @Query("""
     SELECT * FROM cart_items
-    WHERE cartId = :cartId AND productId = :productId
+    WHERE cartId = :cartId AND productId = :productId AND selectedExtra = :extra
 """)
-    suspend fun getCartItem(cartId: Int, productId: Int): CartItems?
+    suspend fun getCartItem(cartId: Int, productId: Int, extra: String): CartItems?
 
     @Query("""
         UPDATE cart_items
