@@ -20,6 +20,9 @@ import kotlinx.coroutines.withContext
 class LoginActivity : ComponentActivity() {
     private lateinit var emailInput: EditText
     private lateinit var passwordInput: EditText
+    val EXTRA_USER_ID = "user_id"
+    val ADMIN_EMAIL = "admin@rest.com"
+    val ADMIN_PASSWORD = "admin"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,8 +33,6 @@ class LoginActivity : ComponentActivity() {
         passwordInput = findViewById(R.id.editTextPassword)
         val loginButton = findViewById<Button>(R.id.buttonLogin)
         val goToSignup = findViewById<TextView>(R.id.textGoToSignup)
-
-        seedAdminUser()
 
         loginButton.setOnClickListener {
             val email = emailInput.text.toString().trim()
@@ -60,7 +61,7 @@ class LoginActivity : ComponentActivity() {
                 }
 
                 Toast.makeText(this@LoginActivity, R.string.login_success, Toast.LENGTH_SHORT).show()
-                val isAdmin = email.equals(ADMIN_EMAIL, ignoreCase = true)
+                val isAdmin = (email == ADMIN_EMAIL && password == ADMIN_PASSWORD)
                 if (isAdmin) {
                     startActivity(Intent(this@LoginActivity, AdminDashActivity::class.java))
                 } else {
@@ -79,26 +80,6 @@ class LoginActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Makes sure the admin account exists so the admin side
-     * is reachable. Credentials: admin@rest.com / admin
-     */
-    private fun seedAdminUser() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val dao = RestaurantDatabase.getInstance(applicationContext).userDao()
-            if (dao.getUserByEmail(ADMIN_EMAIL) == null) {
-                dao.insertUser(
-                    User(
-                        name = "Admin",
-                        address = "",
-                        password = ADMIN_PASSWORD,
-                        email = ADMIN_EMAIL
-                    )
-                )
-            }
-        }
-    }
-
     private fun validate(email: String, password: String): Boolean {
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, R.string.error_field_required, Toast.LENGTH_SHORT).show()
@@ -111,9 +92,4 @@ class LoginActivity : ComponentActivity() {
         return true
     }
 
-    companion object {
-        const val EXTRA_USER_ID = "user_id"
-        const val ADMIN_EMAIL = "admin@rest.com"
-        const val ADMIN_PASSWORD = "admin"
-    }
 }

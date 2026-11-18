@@ -51,18 +51,17 @@ class SignupActivity : ComponentActivity() {
                     password = password,
                     email = email
                 )
-                val insertedId = withContext(Dispatchers.IO) {
-                    val dao = RestaurantDatabase.getInstance(applicationContext).userDao()
-                    // Reject the email if it is already registered
-                    if (dao.getUserByEmail(email) != null) -1L
-                    else dao.insertUser(newUser)
-                }
-                signupButton.isEnabled = true
+                val dao = RestaurantDatabase.getInstance(applicationContext).userDao()
 
-                if (insertedId == -1L) {
+                val emailTaken = withContext(Dispatchers.IO) { dao.getUserByEmail(email) != null }
+                if (emailTaken) {
+                    signupButton.isEnabled = true
                     emailInput.error = getString(R.string.error_email_taken)
                     return@launch
                 }
+
+                withContext(Dispatchers.IO) { dao.insertUser(newUser) }
+                signupButton.isEnabled = true
 
                 Toast.makeText(this@SignupActivity, R.string.signup_success, Toast.LENGTH_SHORT).show()
                 startActivity(Intent(this@SignupActivity, LoginActivity::class.java))
@@ -83,10 +82,6 @@ class SignupActivity : ComponentActivity() {
     ): Boolean {
         if (name.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             Toast.makeText(this, R.string.error_field_required, Toast.LENGTH_SHORT).show()
-            return false
-        }
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailInput.error = getString(R.string.error_invalid_email)
             return false
         }
         if (password.length < 6) {

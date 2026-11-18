@@ -11,6 +11,7 @@ import com.example.restarant_mobile_app.cart.Entities.CartItems
 @Dao
 interface CartItemsDAO {
 
+    // TODO: remove this shit
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertCartItem(cartItem: CartItems): Long
 

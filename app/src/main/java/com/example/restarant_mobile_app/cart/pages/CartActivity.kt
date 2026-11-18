@@ -70,6 +70,7 @@ class CartActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        // TODO: remove -1L
         val userId = intent.getLongExtra(EXTRA_USER_ID, -1L)
 
         val database = RestaurantDatabase.getInstance(this)
@@ -89,6 +90,7 @@ class CartActivity : ComponentActivity() {
 
                 val savedItems = cartItemsDAO.getCartItems(cart.id)
 
+                // TODO: remove and optimize
                 val allProducts = kotlinx.coroutines.withContext(
                     kotlinx.coroutines.Dispatchers.IO
                 ) {
@@ -126,6 +128,7 @@ class CartActivity : ComponentActivity() {
                             finish()
                         },
 
+                        // TODO: nfhmhm till 177
                         onIncrease = { item, index ->
 
                             lifecycleScope.launch {
@@ -232,6 +235,7 @@ class CartActivity : ComponentActivity() {
 
 @Composable
 fun CartScreen(
+    // TODO: what is -> Unit
     cartItems: List<CartItems>,
     products: List<Product>,
     onBack: () -> Unit,
