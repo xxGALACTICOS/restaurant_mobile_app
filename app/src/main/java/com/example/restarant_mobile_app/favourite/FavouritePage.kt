@@ -32,7 +32,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.products.pages.MenuActivity
@@ -53,6 +53,8 @@ import kotlinx.coroutines.withContext
 
 class FavouritePage : ComponentActivity() {
 
+    private var resumeTick by mutableStateOf(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -62,11 +64,17 @@ class FavouritePage : ComponentActivity() {
                 ProtectedScaffold(userId = userId, currentTab = BottomBarTab.Favourites) { innerPadding ->
                     FavouritesScreen(
                         userId = userId,
+                        refreshTick = resumeTick,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        resumeTick++
     }
 
     companion object {
@@ -75,20 +83,23 @@ class FavouritePage : ComponentActivity() {
 }
 
 @Composable
-fun FavouritesScreen(userId: Long, modifier: Modifier = Modifier) {
+fun FavouritesScreen(
+    userId: Long,
+    refreshTick: Int = 0,
+    modifier: Modifier = Modifier
+) {
     var loading by remember { mutableStateOf(true) }
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
 
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val activity = context as ComponentActivity
 
-    suspend fun reload(): List<Product> =
-        RestaurantDatabase.getInstance(context.applicationContext)
-            .favouritesDao()
-            .getFavouriteProducts(userId)
-
-    LaunchedEffect(userId) {
-        products = withContext(Dispatchers.IO) { reload() }
+    LaunchedEffect(userId, refreshTick) {
+        products = withContext(Dispatchers.IO) {
+            RestaurantDatabase.getInstance(context.applicationContext)
+                .favouritesDao()
+                .getFavouriteProducts(userId)
+        }
         loading = false
     }
 
@@ -125,12 +136,14 @@ fun FavouritesScreen(userId: Long, modifier: Modifier = Modifier) {
                         FavouriteCard(
                             product = product,
                             onRemove = {
-                                scope.launch(Dispatchers.IO) {
-                                    RestaurantDatabase
-                                        .getInstance(context.applicationContext)
-                                        .favouritesDao()
-                                        .removeFavourite(userId, product.id)
-                                    products = reload()
+                                activity.lifecycleScope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        RestaurantDatabase
+                                            .getInstance(context.applicationContext)
+                                            .favouritesDao()
+                                            .removeFavourite(userId, product.id)
+                                    }
+                                    products = products.filterNot { it.id == product.id }
                                 }
                             }
                         )

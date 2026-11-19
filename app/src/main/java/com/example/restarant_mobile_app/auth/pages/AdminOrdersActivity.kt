@@ -364,10 +364,13 @@ private fun AdminOrderDetailsDialog(
 @Composable
 private fun StatusChip(status: String, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val (bg, fg) = when (status.lowercase()) {
-        "delivered", "completed" -> colors.primaryContainer to colors.onPrimaryContainer
-        "cancelled" -> colors.errorContainer to colors.onErrorContainer
-        else -> colors.secondaryContainer to colors.onSecondaryContainer
+    val lower = status.lowercase()
+    val (bg, fg) = if (lower == "delivered" || lower == "completed") {
+        colors.primaryContainer to colors.onPrimaryContainer
+    } else if (lower == "cancelled") {
+        colors.errorContainer to colors.onErrorContainer
+    } else {
+        colors.secondaryContainer to colors.onSecondaryContainer
     }
     Surface(modifier = modifier, shape = RoundedCornerShape(50), color = bg) {
         Text(

@@ -128,7 +128,9 @@ class CartActivity : ComponentActivity() {
 
                                     cartItemsDAO.increaseQuantity(
                                         cartId,
-                                        item.productId
+                                        item.productId,
+                                        item.selectedExtra
+
                                     )
 
                                     cartItems[index] = item.copy(
@@ -148,7 +150,10 @@ class CartActivity : ComponentActivity() {
 
                                     cartItemsDAO.decreaseQuantity(
                                         cartId,
-                                        item.productId
+                                        item.productId,
+                                        item.selectedExtra
+
+
                                     )
 
                                     cartItems[index] = item.copy(

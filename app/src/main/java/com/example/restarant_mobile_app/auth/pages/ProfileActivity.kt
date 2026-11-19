@@ -78,11 +78,9 @@ class ProfileActivity : ComponentActivity() {
         }
     }
 
-    /** Logs out: clears the whole task and returns to the login screen. */
     private fun logout() {
         startActivity(
             Intent(this, LoginActivity::class.java).apply {
-                // Wipe the back stack so Back can't return to protected pages
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
         )
@@ -113,83 +111,64 @@ fun ProfileScreen(userId: Long, modifier: Modifier = Modifier, onLogout: () -> U
         loading = false
     }
 
-    when {
-        loading -> Box(
+    if (loading) {
+        Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) { CircularProgressIndicator() }
-
-        user == null -> Box(
+    } else if (user == null) {
+        Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) { Text("User not found") }
+    } else {
+        val profileUser = user!!
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item { ProfileHeader(profileUser) }
 
-        else -> user?.let {
-            ProfileContent(
-                user = it,
-                orders = ordersWithItems,
-                modifier = modifier,
-                onLogout = onLogout,
-                onOrderClick = { orderWithItems ->
-                    selectedOrderWithItems = orderWithItems
+            item {
+                Text(
+                    text = "My Orders (${ordersWithItems.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (ordersWithItems.isEmpty()) {
+                item { EmptyOrders() }
+            } else {
+                items(ordersWithItems, key = { it.order.orderId }) { orderWithItems ->
+                    OrderCard(
+                        orderWithItems = orderWithItems,
+                        onClick = { selectedOrderWithItems = orderWithItems }
+                    )
                 }
+            }
+
+            item {
+                Button(
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Text("Log out")
+                }
+            }
+        }
+
+        val selected = selectedOrderWithItems
+        if (selected != null) {
+            OrderDetailsDialog(
+                orderWithItems = selected,
+                onDismiss = { selectedOrderWithItems = null }
             )
-
-            selectedOrderWithItems?.let { selected ->
-                OrderDetailsDialog(
-                    orderWithItems = selected,
-                    onDismiss = { selectedOrderWithItems = null }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ProfileContent(
-    user: User,
-    orders: List<OrderWithItems>,
-    modifier: Modifier = Modifier,
-    onLogout: () -> Unit,
-    onOrderClick: (OrderWithItems) -> Unit
-) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item { ProfileHeader(user) }
-
-        item {
-            Text(
-                text = "My Orders (${orders.size})",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        if (orders.isEmpty()) {
-            item { EmptyOrders() }
-        } else {
-            items(orders, key = { it.order.orderId }) { orderWithItems ->
-                OrderCard(
-                    orderWithItems = orderWithItems,
-                    onClick = { onOrderClick(orderWithItems) }
-                )
-            }
-        }
-
-        item {
-            Button(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
-                )
-            ) {
-                Text("Log out")
-            }
         }
     }
 }
@@ -404,13 +383,13 @@ private fun OrderDetailsDialog(
 @Composable
 private fun StatusChip(status: String, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    val (bg, fg) = when (status.lowercase()) {
-        "delivered", "completed" ->
-            colors.primaryContainer to colors.onPrimaryContainer
-        "cancelled" ->
-            colors.errorContainer to colors.onErrorContainer
-        else ->
-            colors.secondaryContainer to colors.onSecondaryContainer
+    val lower = status.lowercase()
+    val (bg, fg) = if (lower == "delivered" || lower == "completed") {
+        colors.primaryContainer to colors.onPrimaryContainer
+    } else if (lower == "cancelled") {
+        colors.errorContainer to colors.onErrorContainer
+    } else {
+        colors.secondaryContainer to colors.onSecondaryContainer
     }
     Surface(modifier = modifier, shape = RoundedCornerShape(50), color = bg) {
         Text(
@@ -440,5 +419,3 @@ private fun EmptyOrders(modifier: Modifier = Modifier) {
 
 private fun formatDate(timestamp: Long): String =
     SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.getDefault()).format(Date(timestamp))
-
-

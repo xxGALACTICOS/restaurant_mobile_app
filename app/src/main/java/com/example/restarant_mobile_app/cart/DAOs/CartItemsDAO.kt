@@ -26,18 +26,19 @@ interface CartItemsDAO {
     @Query("""
         UPDATE cart_items
         SET quantity = quantity + 1
-        WHERE cartId = :cartId AND productId = :productId
+        WHERE cartId = :cartId AND productId = :productId AND selectedExtra = :extra
     """)
-    suspend fun increaseQuantity(cartId: Int, productId: Int)
+    suspend fun increaseQuantity(cartId: Int, productId: Int, extra: String)
 
     @Query("""
         UPDATE cart_items
         SET quantity = quantity - 1
         WHERE cartId = :cartId
         AND productId = :productId
+        AND selectedExtra = :extra
         AND quantity > 1
     """)
-    suspend fun decreaseQuantity(cartId: Int, productId: Int)
+    suspend fun decreaseQuantity(cartId: Int, productId: Int, extra: String)
 
     @Delete
     suspend fun deleteCartItem(cartItem: CartItems)

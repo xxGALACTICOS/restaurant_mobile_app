@@ -2,6 +2,7 @@ package com.example.restarant_mobile_app.auth.pages
 
 import android.net.Uri
 import android.os.Bundle
+import androidx.lifecycle.lifecycleScope
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -35,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +68,7 @@ class AdminProductsActivity : ComponentActivity() {
 @Composable
 fun AdminProductsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+    val activity = context as ComponentActivity
     val dao = remember {
         RestaurantDatabase.getInstance(context.applicationContext).productsDao()
     }
@@ -109,7 +109,7 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
                         showProductDialog = true
                     },
                     onDeleteClick = {
-                        scope.launch {
+                        activity.lifecycleScope.launch {
                             dao.deleteProduct(product)
                             reload()
                         }
@@ -129,7 +129,7 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
             onSave = { saved ->
                 showProductDialog = false
                 editingProduct = null
-                scope.launch {
+                activity.lifecycleScope.launch {
                     if (saved.id == 0) {
                         dao.insertProduct(saved)
                     } else {

@@ -20,7 +20,7 @@ import com.example.restarant_mobile_app.products.DAOs.ProductDAO
 import com.example.restarant_mobile_app.products.Entities.Product
 
 
-@Database(entities = [User::class, Cart::class, CartItems::class, Order::class, OrderItem::class, Product::class, Favourite::class], version = 1)
+@Database(entities = [User::class, Cart::class, CartItems::class, Order::class, OrderItem::class, Product::class, Favourite::class], version = 2)
 
 abstract class RestaurantDatabase : RoomDatabase() {
     abstract fun userDao(): UsersDAO
