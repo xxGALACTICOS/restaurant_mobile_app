@@ -33,7 +33,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,9 +48,7 @@ import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
 import com.example.restarant_mobile_app.products.Entities.Product
 import com.example.restarant_mobile_app.products.pages.ProductImage
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class AdminProductsActivity : ComponentActivity() {
@@ -76,15 +73,12 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
         RestaurantDatabase.getInstance(context.applicationContext).productsDao()
     }
 
-    val products = remember { mutableStateListOf<Product>() }
-    var productToEdit by remember { mutableStateOf<Product?>(null) }
-    var showCreateDialog by remember { mutableStateOf(false) }
+    var products by remember { mutableStateOf(emptyList<Product>()) }
+    var editingProduct by remember { mutableStateOf<Product?>(null) }
+    var showProductDialog by remember { mutableStateOf(false) }
 
-    // Loads the current list straight from the DB
     suspend fun reload() {
-        val list = withContext(Dispatchers.IO) { dao.getAllProducts() }
-        products.clear()
-        products.addAll(list)
+        products = dao.getAllProducts()
     }
 
     LaunchedEffect(Unit) { reload() }
@@ -93,11 +87,15 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "Products",
-                fontSize = 24.sp,
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.weight(1f)
             )
-            Button(onClick = { showCreateDialog = true }) {
+            Button(
+                onClick = {
+                    editingProduct = null
+                    showProductDialog = true
+                }
+            ) {
                 Text(text = "Create product")
             }
         }
@@ -106,10 +104,13 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
             items(products, key = { it.id }) { product ->
                 ProductRow(
                     product = product,
-                    onEditClick = { productToEdit = product },
+                    onEditClick = {
+                        editingProduct = product
+                        showProductDialog = true
+                    },
                     onDeleteClick = {
                         scope.launch {
-                            withContext(Dispatchers.IO) { dao.deleteProduct(product) }
+                            dao.deleteProduct(product)
                             reload()
                         }
                     }
@@ -118,27 +119,22 @@ fun AdminProductsScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    if (showCreateDialog) {
-        CreateProductDialog(
-            onDismiss = { showCreateDialog = false },
-            onCreate = { created ->
-                showCreateDialog = false
+    if (showProductDialog) {
+        ProductFormDialog(
+            product = editingProduct,
+            onDismiss = {
+                showProductDialog = false
+                editingProduct = null
+            },
+            onSave = { saved ->
+                showProductDialog = false
+                editingProduct = null
                 scope.launch {
-                    withContext(Dispatchers.IO) { dao.insertProduct(created) }
-                    reload()
-                }
-            }
-        )
-    }
-
-    productToEdit?.let { current ->
-        EditProductDialog(
-            product = current,
-            onDismiss = { productToEdit = null },
-            onSave = { updated ->
-                productToEdit = null
-                scope.launch {
-                    withContext(Dispatchers.IO) { dao.updateProduct(updated) }
+                    if (saved.id == 0) {
+                        dao.insertProduct(saved)
+                    } else {
+                        dao.updateProduct(saved)
+                    }
                     reload()
                 }
             }
@@ -192,16 +188,16 @@ fun ProductRow(
 }
 
 @Composable
-fun CreateProductDialog(
+fun ProductFormDialog(
+    product: Product?,
     onDismiss: () -> Unit,
-    onCreate: (Product) -> Unit,
-    modifier: Modifier = Modifier
+    onSave: (Product) -> Unit
 ) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var priceText by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(product?.name ?: "") }
+    var description by remember { mutableStateOf(product?.description ?: "") }
+    var priceText by remember { mutableStateOf(product?.price?.toString() ?: "") }
+    var imageUri by remember { mutableStateOf(product?.imageName ?: "") }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -213,7 +209,6 @@ fun CreateProductDialog(
                     android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             } catch (_: Exception) {
-                // Ignore if not supported
             }
             imageUri = it.toString()
         }
@@ -221,7 +216,9 @@ fun CreateProductDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Create product") },
+        title = {
+            Text(text = if (product == null) "Create product" else "Edit product")
+        },
         text = {
             Column {
                 TextField(
@@ -280,127 +277,23 @@ fun CreateProductDialog(
                 onClick = {
                     val price = priceText.toDoubleOrNull() ?: return@Button
                     if (name.isBlank()) return@Button
-                    onCreate(
-                        Product(
-                            name = name.trim(),
-                            description = description.trim(),
-                            price = price,
-                            imageName = imageUri
-                        )
+
+                    val saved = product?.copy(
+                        name = name.trim(),
+                        description = description.trim(),
+                        price = price,
+                        imageName = imageUri
+                    ) ?: Product(
+                        name = name.trim(),
+                        description = description.trim(),
+                        price = price,
+                        imageName = imageUri
                     )
+
+                    onSave(saved)
                 }
             ) {
-                Text(text = "Create")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text(text = "Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun EditProductDialog(
-    product: Product,
-    onDismiss: () -> Unit,
-    onSave: (Product) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    var name by remember { mutableStateOf(product.name) }
-    var description by remember { mutableStateOf(product.description) }
-    var priceText by remember { mutableStateOf(product.price.toString()) }
-    var imageUri by remember { mutableStateOf(product.imageName) }
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    it,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (_: Exception) {
-                // Ignore if not supported
-            }
-            imageUri = it.toString()
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = "Edit product") },
-        text = {
-            Column {
-                TextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(text = "Name") },
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                TextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text(text = "Description") },
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                TextField(
-                    value = priceText,
-                    onValueChange = { priceText = it },
-                    label = { Text(text = "Price") },
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFE8E8E8)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (imageUri.isNotEmpty()) {
-                            ProductImage(
-                                imageName = imageUri,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Text("No Image", fontSize = 10.sp, color = Color.Gray)
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    OutlinedButton(
-                        onClick = { imagePickerLauncher.launch("image/*") },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(text = if (imageUri.isEmpty()) "Choose Image" else "Change Image")
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val price = priceText.toDoubleOrNull() ?: return@Button
-                    onSave(
-                        product.copy(
-                            name = name.trim(),
-                            description = description.trim(),
-                            price = price,
-                            imageName = imageUri
-                        )
-                    )
-                }
-            ) {
-                Text(text = "Save")
+                Text(text = if (product == null) "Create" else "Save")
             }
         },
         dismissButton = {

@@ -12,13 +12,13 @@ import androidx.room3.Query
 interface ProductDAO {
 
     @Insert
-    fun insertProduct(product: Product)
+    suspend fun insertProduct(product: Product)
 
     @Update
-    fun updateProduct(product: Product)
+    suspend fun updateProduct(product: Product)
 
     @Delete
-    fun deleteProduct(product: Product)
+    suspend fun deleteProduct(product: Product)
 
     @Query("SELECT * FROM products")
     suspend fun getAllProducts(): List<Product>
