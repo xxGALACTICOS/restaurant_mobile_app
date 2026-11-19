@@ -8,6 +8,7 @@
     <string name="signup_subtitle">Sign up to start ordering</string>
     <string name="hint_name">Full name</string>
     <string name="hint_email">Email</string>
+    <string name="hint_address">Address</string>
     <string name="hint_password">Password</string>
     <string name="hint_confirm_password">Confirm password</string>
     <string name="action_login">Log In</string>

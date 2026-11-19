@@ -28,6 +28,7 @@ class SignupActivity : ComponentActivity() {
 
         val nameInput = findViewById<EditText>(R.id.editTextName)
         emailInput = findViewById(R.id.editTextEmail)
+        val addressInput = findViewById<EditText>(R.id.editTextAddress)
         passwordInput = findViewById(R.id.editTextPassword)
         confirmPasswordInput = findViewById(R.id.editTextConfirmPassword)
         val signupButton = findViewById<Button>(R.id.buttonSignup)
@@ -36,10 +37,11 @@ class SignupActivity : ComponentActivity() {
         signupButton.setOnClickListener {
             val name = nameInput.text.toString().trim()
             val email = emailInput.text.toString().trim()
+            val address = addressInput.text.toString().trim()
             val password = passwordInput.text.toString()
             val confirmPassword = confirmPasswordInput.text.toString()
 
-            if (!validate(name, email, password, confirmPassword)) {
+            if (!validate(name, email, address, password, confirmPassword)) {
                 return@setOnClickListener
             }
 
@@ -47,7 +49,7 @@ class SignupActivity : ComponentActivity() {
             lifecycleScope.launch {
                 val newUser = User(
                     name = name,
-                    address = "",
+                    address = address,
                     password = password,
                     email = email
                 )
@@ -77,10 +79,11 @@ class SignupActivity : ComponentActivity() {
     private fun validate(
         name: String,
         email: String,
+        address: String,
         password: String,
         confirmPassword: String
     ): Boolean {
-        if (name.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+        if (name.isEmpty() || email.isEmpty() || address.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             Toast.makeText(this, R.string.error_field_required, Toast.LENGTH_SHORT).show()
             return false
         }

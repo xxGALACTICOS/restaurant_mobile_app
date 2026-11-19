@@ -235,7 +235,7 @@ private fun ProfileHeader(user: User, modifier: Modifier = Modifier) {
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = user.address,
+                    text = "Address: ${user.address}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
