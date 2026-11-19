@@ -47,8 +47,6 @@ import androidx.compose.ui.unit.dp
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.auth.Entities.User
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
-import com.example.restarant_mobile_app.order.Entities.Order
-import com.example.restarant_mobile_app.order.Entities.OrderItem
 import com.example.restarant_mobile_app.order.Entities.OrderWithItems
 import com.example.restarant_mobile_app.ui.components.BottomBarTab
 import com.example.restarant_mobile_app.ui.components.ProtectedScaffold
@@ -173,7 +171,7 @@ fun ProfileContent(
         if (orders.isEmpty()) {
             item { EmptyOrders() }
         } else {
-            items(orders, key = { it.order.id }) { orderWithItems ->
+            items(orders, key = { it.order.orderId }) { orderWithItems ->
                 OrderCard(
                     orderWithItems = orderWithItems,
                     onClick = { onOrderClick(orderWithItems) }
@@ -267,14 +265,14 @@ private fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Order #${order.id}",
+                    text = "Order #${order.orderId}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 StatusChip(order.status)
             }
             Text(
-                text = formatDate(order.date),
+                text = formatDate(order.orderDate),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -294,7 +292,7 @@ private fun OrderCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = String.format(Locale.getDefault(), "$%.2f", order.total),
+                    text = String.format(Locale.getDefault(), "$%.2f", order.totalPrice),
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -313,18 +311,11 @@ private fun OrderDetailsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Order #${order.id}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                StatusChip(order.status)
-            }
+            Text(
+                text = "Order #${order.orderId}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         },
         text = {
             Column(
@@ -332,11 +323,10 @@ private fun OrderDetailsDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = formatDate(order.date),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Items (${items.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
                 )
-                HorizontalDivider()
 
                 if (items.isEmpty()) {
                     Text(
@@ -395,7 +385,7 @@ private fun OrderDetailsDialog(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = String.format(Locale.getDefault(), "$%.2f", order.total),
+                        text = String.format(Locale.getDefault(), "$%.2f", order.totalPrice),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

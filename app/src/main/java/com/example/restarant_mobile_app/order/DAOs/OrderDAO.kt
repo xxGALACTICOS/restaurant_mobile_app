@@ -9,7 +9,7 @@ import com.example.restarant_mobile_app.order.Entities.OrderItem
 import com.example.restarant_mobile_app.order.Entities.OrderWithItems
 
 @Dao
-abstract class OrderDAO {
+interface OrderDAO {
 
     @Insert
     abstract suspend fun insertOrder(order: Order): Long
@@ -24,26 +24,24 @@ abstract class OrderDAO {
         items: List<OrderItem>
     ): Long {
         val orderId = insertOrder(order)
-        val updatedItems = items.map {
-            it.copy(orderId = orderId.toInt())
-        }
-        insertOrderItems(updatedItems)
+        insertOrderItems(
+            items.map { it.copy(orderId = orderId.toInt()) }
+        )
+
         return orderId
     }
 
-    // Get all orders
     @Query("SELECT * FROM orders ORDER BY orderDate DESC")
     abstract suspend fun getAllOrders(): List<Order>
 
-    // Get orders by user ID
     @Query("SELECT * FROM orders WHERE userId = :userId ORDER BY orderDate DESC")
     abstract suspend fun getOrdersByUserId(userId: Long): List<Order>
 
-    // Get a specific order
+
     @Query("SELECT * FROM orders WHERE orderId = :orderId")
     abstract suspend fun getOrderById(orderId: Int): Order?
 
-    // Get order items
+
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     abstract suspend fun getOrderItems(orderId: Int): List<OrderItem>
 
@@ -57,7 +55,7 @@ abstract class OrderDAO {
     @Query("SELECT * FROM orders ORDER BY orderDate DESC")
     abstract suspend fun getAllOrdersWithItems(): List<OrderWithItems>
 
-    // Update order status
+
     @Query("UPDATE orders SET status = :status WHERE orderId = :orderId")
     abstract suspend fun updateOrderStatus(
         orderId: Int,

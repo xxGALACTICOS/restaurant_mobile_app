@@ -29,8 +29,4 @@ data class Order(
     val totalPrice: Double,
 
     val status: String = "Pending"
-) {
-    val id: Int get() = orderId
-    val date: Long get() = orderDate
-    val total: Double get() = totalPrice
-}
+)

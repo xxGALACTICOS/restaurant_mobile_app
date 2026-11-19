@@ -21,7 +21,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -34,7 +33,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
 import com.example.restarant_mobile_app.RestaurantDatabase
 import com.example.restarant_mobile_app.auth.pages.ui.theme.Restarant_mobile_appTheme
 import com.example.restarant_mobile_app.order.Entities.OrderWithItems
@@ -75,15 +74,16 @@ data class AdminOrderData(
 
 @Composable
 fun AdminOrdersScreen(modifier: Modifier = Modifier) {
-    var loading by remember { mutableStateOf(true) }
     var adminOrders by remember { mutableStateOf<List<AdminOrderData>>(emptyList()) }
-    var selectedOrder by remember { mutableStateOf<AdminOrderData?>(null) }
+    var selectedOrderId by remember { mutableStateOf<Int?>(null) }
+    val selectedOrder = adminOrders.find { it.orderWithItems.order.orderId == selectedOrderId }
 
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+
+    val lifecycleScope = (context as ComponentActivity).lifecycleScope
 
     fun loadOrders() {
-        scope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             val db = RestaurantDatabase.getInstance(context.applicationContext)
             val ordersWithItems = db.orderDao().getAllOrdersWithItems()
             val usersMap = db.userDao().getAllUsers().associateBy { it.id }
@@ -99,26 +99,15 @@ fun AdminOrdersScreen(modifier: Modifier = Modifier) {
             }
             withContext(Dispatchers.Main) {
                 adminOrders = list
-                loading = false
             }
         }
     }
 
     fun updateStatus(orderId: Int, newStatus: String) {
-        scope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             val db = RestaurantDatabase.getInstance(context.applicationContext)
             db.orderDao().updateOrderStatus(orderId, newStatus)
             loadOrders()
-            withContext(Dispatchers.Main) {
-                if (selectedOrder?.orderWithItems?.order?.id == orderId) {
-                    val updated = selectedOrder?.orderWithItems?.order?.copy(status = newStatus)
-                    if (updated != null && selectedOrder != null) {
-                        selectedOrder = selectedOrder!!.copy(
-                            orderWithItems = selectedOrder!!.orderWithItems.copy(order = updated)
-                        )
-                    }
-                }
-            }
         }
     }
 
@@ -126,76 +115,61 @@ fun AdminOrdersScreen(modifier: Modifier = Modifier) {
         loadOrders()
     }
 
-    when {
-        loading -> Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+         Text(
+            text = "Orders (${adminOrders.size})",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        else -> {
-            Column(
-                modifier = modifier
+        if (adminOrders.isEmpty()) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .weight(1f),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Orders (${adminOrders.size})",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.headlineMedium
+                    text = "No orders found",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (adminOrders.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No orders found",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(adminOrders, key = { it.orderWithItems.order.id }) { adminOrder ->
-                            AdminOrderCard(
-                                adminOrder = adminOrder,
-                                onClick = { selectedOrder = adminOrder },
-                                onStatusChange = { newStatus ->
-                                    updateStatus(adminOrder.orderWithItems.order.id, newStatus)
-                                }
-                            )
+            }
+        }  else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(adminOrders,  key = { it.orderWithItems.order.orderId }) { adminOrder ->
+                    AdminOrderCard(
+                        adminOrder = adminOrder,
+                        onClick = { selectedOrderId = adminOrder.orderWithItems.order.orderId },
+                        onStatusChange = { newStatus ->
+                            updateStatus(adminOrder.orderWithItems.order.orderId, newStatus)
                         }
-                    }
+                    )
                 }
             }
-
-            selectedOrder?.let { selected ->
-                AdminOrderDetailsDialog(
-                    adminOrder = selected,
-                    onStatusChange = { newStatus ->
-                        updateStatus(selected.orderWithItems.order.id, newStatus)
-                    },
-                    onDismiss = { selectedOrder = null }
-                )
-            }
         }
+    }
+    if (selectedOrder !=  null) {
+        AdminOrderDetailsDialog(
+            adminOrder = selectedOrder,
+            onDismiss = { selectedOrderId = null }
+        )
     }
 }
 
 @Composable
 private fun AdminOrderCard(
     adminOrder: AdminOrderData,
-    onClick: () -> Unit,
+    onClick: () ->  Unit,
     onStatusChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -216,7 +190,7 @@ private fun AdminOrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Order #${order.id}",
+                    text = "Order #${order.orderId}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -224,7 +198,7 @@ private fun AdminOrderCard(
             }
 
             Text(
-                text = "By ${adminOrder.userName} · ${formatDate(order.date)}",
+                text = "By ${adminOrder.userName} · ${formatDate(order.orderDate)}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -244,7 +218,7 @@ private fun AdminOrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Total: $${String.format(Locale.getDefault(), "%.2f", order.total)}",
+                    text = "Total: $${String.format(Locale.getDefault(), "%.2f", order.totalPrice)}",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -289,7 +263,6 @@ private fun AdminOrderCard(
 @Composable
 private fun AdminOrderDetailsDialog(
     adminOrder: AdminOrderData,
-    onStatusChange: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val order = adminOrder.orderWithItems.order
@@ -298,53 +271,17 @@ private fun AdminOrderDetailsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Order #${order.id}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                StatusChip(order.status)
-            }
+            Text(
+                text = "Order #${order.orderId}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column {
-                    Text(
-                        text = "Customer: ${adminOrder.userName}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    if (adminOrder.userEmail.isNotBlank()) {
-                        Text(
-                            text = "Email: ${adminOrder.userEmail}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    if (adminOrder.userAddress.isNotBlank()) {
-                        Text(
-                            text = "Address: ${adminOrder.userAddress}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Text(
-                        text = "Date: ${formatDate(order.date)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                HorizontalDivider()
-
                 Text(
                     text = "Items (${items.size})",
                     style = MaterialTheme.typography.titleSmall,
@@ -408,51 +345,11 @@ private fun AdminOrderDetailsDialog(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = String.format(Locale.getDefault(), "$%.2f", order.total),
+                        text = String.format(Locale.getDefault(), "$%.2f", order.totalPrice),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-
-                HorizontalDivider()
-
-                Text(
-                    text = "Change Status:",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { onStatusChange("Pending") },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
-                        enabled = order.status.lowercase() != "pending"
-                    ) {
-                        Text("Pending", fontSize = 11.sp, maxLines = 1, softWrap = false)
-                    }
-                    Button(
-                        onClick = { onStatusChange("Completed") },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
-                        enabled = order.status.lowercase() != "completed"
-                    ) {
-                        Text("Completed", fontSize = 11.sp, maxLines = 1, softWrap = false)
-                    }
-                    Button(
-                        onClick = { onStatusChange("Cancelled") },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        ),
-                        enabled = order.status.lowercase() != "cancelled"
-                    ) {
-                        Text("Cancel", fontSize = 11.sp, maxLines = 1, softWrap = false)
-                    }
                 }
             }
         },
@@ -468,12 +365,9 @@ private fun AdminOrderDetailsDialog(
 private fun StatusChip(status: String, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val (bg, fg) = when (status.lowercase()) {
-        "delivered", "completed" ->
-            colors.primaryContainer to colors.onPrimaryContainer
-        "cancelled" ->
-            colors.errorContainer to colors.onErrorContainer
-        else ->
-            colors.secondaryContainer to colors.onSecondaryContainer
+        "delivered", "completed" -> colors.primaryContainer to colors.onPrimaryContainer
+        "cancelled" -> colors.errorContainer to colors.onErrorContainer
+        else -> colors.secondaryContainer to colors.onSecondaryContainer
     }
     Surface(modifier = modifier, shape = RoundedCornerShape(50), color = bg) {
         Text(
